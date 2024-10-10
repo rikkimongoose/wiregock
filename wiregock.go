@@ -9,7 +9,6 @@ import (
     "fmt"
     "flag"
     "github.com/ilyakaznacheev/cleanenv"
-    "net/http"
     "go.uber.org/zap"
     "go.uber.org/zap/zapcore"
     "github.com/google/uuid"
@@ -164,38 +163,6 @@ type OrCondition struct {
 
 type QueryParametersConditions struct {
     queryParameters []ConditionRule
-}
-
-type EqualToRule struct {
-    val string
-}
-
-type MatchesRule struct {
-    match string
-}
-
-type ContainsRule struct {
-    val string
-}
-
-type RegExRule struct {
-    match *Regexp
-}
-
-type MatchesXPath struct {
-    xPath string
-}
-
-type EqualToXmlPath struct {
-    equalToXml string
-}
-
-type EqualToJsonPath struct {
-    equalToJson string
-}
-
-type BasicAuthCredentialsPath struct {
-    username, password string
 }
 
 
