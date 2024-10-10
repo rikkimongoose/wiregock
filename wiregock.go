@@ -40,9 +40,9 @@ type AppConfig struct {
         keyFile string `yaml:"keyFile", envconfig:"MONGO_KEY", env-description:"path to private client key"`
     } `yaml:"mongo"`
     Log struct {
-        Encoding string `yaml:"encoding", env-default:"json", envconfig:"LOG_JSON"`
-        OutputPaths []string `yaml:"output", env-default:"stdout,/tmp/logs", envconfig:"LOG_OUTPUTPATH"`
-        ErrorOutputPaths []string `yaml:"erroutput", env-default:"stderr", envconfig:"LOG_OUTPUTERRORPATH"`
+        Encoding string `yaml:"encoding", env-default:"json", envconfig:"LOG_ENCODING", env-description:"storage format for logs"`
+        OutputPaths []string `yaml:"output", env-default:"stdout,/tmp/logs", envconfig:"LOG_OUTPUTPATH", env-description:"output pipelines for logs"`
+        ErrorOutputPaths []string `yaml:"erroutput", env-default:"stderr", envconfig:"LOG_OUTPUTERRORPATH", env-description:"error pipelines for logs"`
     } `yaml:"log"`
 }
 
@@ -51,7 +51,7 @@ var config *AppConfig
 
 func main() {
     var err error
-    cfgPath := flag.String("config", "config.yml", "Path to application config file")
+    cfgPath := flag.String("CONFIG", "config.yml", "Path to application config file")
 
     err := cleanenv.ReadConfig(cfgPath, &config)
     if err != nil {
