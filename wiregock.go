@@ -5,6 +5,8 @@ const (
     productVersion = "0.1.0"
 )
 
+const anyMathods = [...]string{ "GET", "HEAD", "OPTIONS", "TRACE", "PUT", "DELETE", "POST", "PATCH", "CONNECT" }
+
 import (
     "fmt"
     "flag"
@@ -116,19 +118,11 @@ func main() {
             logger.Fatal(err)
         }
 
-        methodNames := strings.Split(wiremock["request"]["method"], ",")
+        methodNames := loadMethods(wiremock["request"]["method"])
 
         server.Add(methodNames, wiremock["request"]["urlPath"], func(c fiber.Ctx) error {
-            requestData := &RequestData(
-                params: c.AllParams()
-                headers: c.GetReqHeaders()
-                body: c.Body()
-            )
-
-            for key, value := range wiremock["request"]["queryParameters"] {
-                //c.Set(key, value)
-            }
-            if false {
+            condition = parseCondition(wiremock["request"])
+            if !condition.check(c) {
                 return fiber.StatusNotFound
             }
 
@@ -143,45 +137,11 @@ func main() {
     server.Listen(serverPath)
 }
 
-type RequestData struct {
-    params map[string]string
-    headers map[string][]string
-    body []byte
-}
-
-type Condition interface {
-    check(request *RequestData) bool
-}
-
-type AndCondition struct {
-    conditions []Condition
-}
-
-type OrCondition struct {
-    conditions []Condition
-}
-
-type QueryParametersConditions struct {
-    queryParameters []ConditionRule
-}
-
-
-func (c *AndCondition) check(request *RequestData) bool {
-    for _, cond := c.conditions {
-        if !cond.check(request) {
-            return false
-        }
+func loadMethods(methodNames string) string[] {
+    if strings.Compare(methodNames, "ANY") {
+        return anyMathods
     }
-    return true
-}
-
-func (c *OrCondition) check(request *RequestData)  bool {
-    for _, cond := c.conditions {
-        if cond.check(request) {
-            return true
-        }
-    }
-    return false
+    return strings.Split(methodNames, ",")
 }
 
 
