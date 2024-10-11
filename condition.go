@@ -19,7 +19,7 @@ type WebContext interface {
 }
 
 type Condition interface {
-    check(context *WebContext) bool
+    check(context *WebContext) (bool, err)
 }
 
 type DataCondition struct {
@@ -28,7 +28,7 @@ type DataCondition struct {
     Rule *Rule
 }
 
-func (c *DataCondition) check(context *WebContext) bool {
+func (c *DataCondition) check(context *WebContext) (bool, err) {
     if strings.Compare(c.Prop, CONDITION_BODY) {
         return c.Rule.check(context.Body())
     }
@@ -41,7 +41,7 @@ func (c *DataCondition) check(context *WebContext) bool {
     if strings.Compare(c.Prop, CONDITION_COOKIE) {
         return c.Rule.check(context.Cookies(c.Key))
     }
-    return false
+    return false, nil
 }
 
 type AndCondition struct {

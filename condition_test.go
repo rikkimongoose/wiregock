@@ -11,24 +11,24 @@ type WebContextMock struct {
 	cookies map[string]string
 }
 
-func (mock WebContextMock) Body() []byte {
+func (mock *WebContextMock) Body() []byte {
 	return []byte{mock.body}
 }
 
-func (mock WebContextMock) Get(key string, defaultValue ...string) string {
+func (mock *WebContextMock) Get(key string, defaultValue ...string) string {
 	if val, ok := mock.headers[key]; ok {
 	    return val
 	}
 	return defaultValue
 }
 
-func (mock WebContextMock) Params(key string, defaultValue ...string) string {
+func (mock *WebContextMock) Params(key string, defaultValue ...string) string {
 	if val, ok := mock.params[key]; ok {
 	    return val
 	}
 	return defaultValue
 }
-func (mock WebContextMock) Cookies(key string, defaultValue ...string) string {
+func (mock *WebContextMock) Cookies(key string, defaultValue ...string) string {
 	if val, ok := mock.cookies[key]; ok {
 	    return val
 	}

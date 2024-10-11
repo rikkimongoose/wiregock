@@ -167,7 +167,11 @@ func installWiremock(server *fiber.App, wiremock bson.M) {
 
     server.Add(methodNames, url, func(c fiber.Ctx) error {
         condition = parseCondition(wiremockRequest)
-        if !condition.check(c) {
+        result, err = condition.check(c)
+        if err != nil {
+           return c.Status(fiber.StatusInternalServerError).SendString(err)
+        }
+        if !result {
             c.Status(fiber.StatusNotFound)
             return nil
         }
