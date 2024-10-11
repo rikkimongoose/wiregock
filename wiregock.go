@@ -5,8 +5,6 @@ const (
     productVersion = "0.1.0"
 )
 
-const anyMathods = [...]string{ "GET", "HEAD", "OPTIONS", "TRACE", "PUT", "DELETE", "POST", "PATCH", "CONNECT" }
-
 import (
     "fmt"
     "flag"
@@ -16,6 +14,7 @@ import (
     "github.com/google/uuid"
     "github.com/gofiber/fiber/v3"
     "github.com/gofiber/fiber/v3/middleware/adaptor"
+    "github.com/gofiber/fiber/v3/middleware/healthcheck"
     "context"
     "crypto/tls"
     "crypto/x509"
@@ -25,6 +24,7 @@ import (
     "go.mongodb.org/mongo-driver/mongo/options"
     actuator "github.com/sinhashubham95/go-actuator"
     "strings"
+    "strconv"
 )
 
 type AppConfig struct {
@@ -111,39 +111,114 @@ func main() {
     }
 
     server.Get("/actuator", adaptor.HTTPHandlerFunc(actuator.GetActuatorHandler(actuatorConfig)))
+    server.Use(healthcheck.New(healthcheck.Config{
+        LivenessProbe: func(c *fiber.Ctx) bool {
+            return true
+        },
+        LivenessEndpoint: "/live",
+        ReadinessProbe: func(c *fiber.Ctx) bool {
+            return true
+        },
+        ReadinessEndpoint: "/ready",
+    }))
 
     for cursor.Next(ctx) {
-        var wiremock Mock
+        var wiremock bson.M
         if err = cursor.Decode(&wiremock); err != nil {
             logger.Fatal(err)
         }
 
-        methodNames := loadMethods(wiremock["request"]["method"])
-
-        server.Add(methodNames, wiremock["request"]["urlPath"], func(c fiber.Ctx) error {
-            condition = parseCondition(wiremock["request"])
-            if !condition.check(c) {
-                return fiber.StatusNotFound
-            }
-
-            for key, value := range wiremock["response"]["headers"] {
-                c.Set(key, value)
-            }
-            return c.Status(wiremock["response"]["code"]).SendString(wiremock["response"]["body"])
-        })
     }
     serverPath = fmt.Sprintf("%s:%s", config.Server.Host, config.Server.Port)
     logger.Info("Establishing server at URL", zap.String("url", serverPath))
     server.Listen(serverPath)
 }
 
-func loadMethods(methodNames string) string[] {
-    if strings.Compare(methodNames, "ANY") {
-        return anyMathods
+func installWiremock(server *fiber.App, wiremock bson.M) {
+    wiremockRequest, ok := wiremock["request"]
+    if !ok {
+        for _, node := range wiremock {
+            if node.(type) != bson.M {
+                continue
+            }
+            installWiremock(server, node)
+        }
     }
-    return strings.Split(methodNames, ",")
-}
 
+    methodNames := loadMethods(wiremockRequest["method"])
+
+    url := loadUrl(wiremockRequest)
+    if url == nil {
+        continue
+    }
+    
+    basicAuthCredentials, ok := wiremockRequest["basicAuthCredentials"]
+    if ok {
+        usernameAuth, usernameOk = basicAuthCredentials["username"]
+        passwordAuth, passwordOk = basicAuthCredentials["password"]
+        if usernameOk && passwordOk {
+            app.Use(basicauth.New(basicauth.Config{
+                Users: map[string]string{
+                    usernameAuth: passwordAuth,
+                    },
+                }))
+        }
+    }
+
+    server.Add(methodNames, url, func(c fiber.Ctx) error {
+        condition = parseCondition(wiremockRequest)
+        if !condition.check(c) {
+            c.Status(fiber.StatusNotFound)
+            return nil
+        }
+
+        traceId = c.Params("traceId")
+        if traceId != nil {
+            c.Set("traceId", traceId)
+        }
+
+        wiremockResponse, ok := wiremock["response"]
+        if !ok {
+            c.Status(fiber.StatusOK)
+            return nil
+        }
+
+        headers, ok = wiremockResponse["headers"]
+        if ok {
+            for key, value := range headers {
+                c.Set(key, value)
+            }
+        }
+
+        cookies, ok = wiremockResponse["cookies"] {
+            for key, value := range cookies {
+                c.Cookie(key, value)
+            }
+        }
+
+        code, ok = wiremockResponse["code"]
+        statusCode = fiber.StatusOK
+        if ok {
+            if code.(type) == int {
+                statusCode = code
+            } else if code.(type) == string {
+                i, err := strconv.Atoi(code)
+                if err != null {
+                    logger.Warn(err)
+                } else {
+                    statusCode = i
+                }
+            }
+        }
+        c.Status(statusCode)
+
+        body, ok = wiremockResponse["body"]
+        if !ok {
+            return nil
+        }
+        return c.SendString(body)
+    })
+}
 
 type MongoTlsConfigInput struct {
     caFile, certFile, keyFile string

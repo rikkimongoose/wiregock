@@ -36,7 +36,7 @@ func parseCondition(m bson.M) *Condition {
 	headers, ok = m[KEY_HEADERS]
 	if ok {
 		for key, val := range headers {
-			rule = parseRule(key, val)
+			rule = parseRule(key, CONDITION_HEADER, val)
 			if rule == nil {
 				logger.Warn("Wrong header")
 				continue
@@ -52,7 +52,7 @@ func parseCondition(m bson.M) *Condition {
 	queries, ok = m[KEY_QUERY]
 	if ok {
 		for key, val := range queries {
-			rule = parseRule(key, val)
+			rule = parseRule(key, CONDITION_PARAMS, val)
 			if rule == nil {
 				logger.Warn("Wrong query")
 				continue
@@ -68,7 +68,7 @@ func parseCondition(m bson.M) *Condition {
 	cookies, ok = m[KEY_COOKIES]
 	if ok {
 		for key, val := range cookies {
-			rule = parseRule(key, val)
+			rule = parseRule(key, CONDITION_COOKIE, val)
 			if rule == nil {
 				logger.Warn("Wrong cookie")
 				continue
@@ -86,7 +86,7 @@ func parseCondition(m bson.M) *Condition {
 		for _, val := range body {
 			conditionsBody := []Condition{}
 			for keyBody, valueBody := range val {
-				rule = parseRule(key, val)
+				rule = parseRule(key, CONDITION_BODY, val)
 				if rule == nil {
 					logger.Warn("Wrong cookie")
 					continue
@@ -111,7 +111,73 @@ func parseCondition(m bson.M) *Condition {
 	return &OrCondition{conditions}
 }
 
-func parseRule(cmd string, value string) *Rule {
+func parseRule(cmd string, namespace string, value interface{}) *Rule {
+	switch t := value.(type) {
+	    case string:
+	        return parseRuleStr(cmd, value)
+	    case []interface {}:
+	        expr, ok = value["expression"]
+	        if !ok {
+	        	return nil
+	        }
+	        ruleBase = parseRuleStr(cmd, expr)
+	        ruleAndNode, ok = value["and"]
+	        if ok {
+				conditionsAnd := []Condition{ruleBase}
+	        	for _, itemAnd := range ruleAndNode {
+	        		conditionsAndBlock := []Condition{}
+	        		for conditionKey, conditionValue := itemAnd {
+	        			rule = parseRule(key, namespace, val)
+						if rule == nil {
+							logger.Warn("Wrong")
+							continue
+						}
+						append(conditionsAndBlock, DataCondition {
+							Prop: namespace
+							Key: key
+						    Rule: rule
+						})
+	        		}
+	        		if len(conditionsAndBlock) > 0 {
+	        			append(conditionsAnd, AndCondition{conditionsAndBlock})
+	        		}
+				}
+				if len(conditionsAnd) > 1 {
+					return AndCondition{conditionsAnd}
+				}
+				return ruleBase
+	        }
+	        ruleOrNode, ok = value["or"]
+	        if ok {
+				conditionsOr := []Condition{ruleBase}
+	        	for _, itemOr := range ruleOrNode {
+	        		conditionsOrBlock := []Condition{}
+	        		for conditionKey, conditionValue := itemOr {
+	        			rule = parseRule(key, namespace, val)
+						if rule == nil {
+							logger.Warn("Wrong")
+							continue
+						}
+						append(conditionsOrBlock, DataCondition {
+							Prop: namespace
+							Key: key
+						    Rule: rule
+						})
+	        		}
+	        		if len(conditionsOrBlock) > 0 {
+	        			append(conditionsOr, AndCondition{conditionsOrBlock})
+	        		}
+				}
+				if len(conditionsOr) > 1 {
+					return OrCondition{conditionsOr}
+				}
+				return ruleBase
+	        }
+    }
+    return nil
+}
+
+func parseRuleStr(cmd string, value string) *Rule {
 	if strings.Compare(cmd, CMD_EQUAL) {
 		return &EqualToRule{value}
 	}

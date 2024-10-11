@@ -29,7 +29,6 @@ type DataCondition struct {
 }
 
 func (c *DataCondition) check(context *WebContext) bool {
-
     if strings.Compare(c.Prop, CONDITION_BODY) {
         return c.Rule.check(context.Body())
     }
