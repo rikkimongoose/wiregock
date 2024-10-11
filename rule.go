@@ -17,6 +17,7 @@ type Rule interface {
 
 type EqualToRule struct {
     val string
+    caseInsensitive false
 }
 
 type EqualToBinaryRule struct {
@@ -47,6 +48,9 @@ type EqualToJsonRule struct {
 }
 
 func (rule EqualToRule) check(str string) (bool, error) {
+	if rule.caseInsensitive {
+		return strings.EqualFold(rule.val, str), nil
+	}
 	return strings.Compare(rule.val, str), nil
 }
 

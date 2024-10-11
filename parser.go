@@ -36,7 +36,7 @@ func parseCondition(m bson.M) *Condition {
 	headers, ok = m[KEY_HEADERS]
 	if ok {
 		for key, val := range headers {
-			rule = parseRule(key, CONDITION_HEADER, val)
+			rule = parseRule(key, CONDITION_HEADER, val, headers)
 			if rule == nil {
 				logger.Warn("Wrong header")
 				continue
@@ -52,7 +52,7 @@ func parseCondition(m bson.M) *Condition {
 	queries, ok = m[KEY_QUERY]
 	if ok {
 		for key, val := range queries {
-			rule = parseRule(key, CONDITION_PARAMS, val)
+			rule = parseRule(key, CONDITION_PARAMS, val, queries)
 			if rule == nil {
 				logger.Warn("Wrong query")
 				continue
@@ -68,7 +68,7 @@ func parseCondition(m bson.M) *Condition {
 	cookies, ok = m[KEY_COOKIES]
 	if ok {
 		for key, val := range cookies {
-			rule = parseRule(key, CONDITION_COOKIE, val)
+			rule = parseRule(key, CONDITION_COOKIE, val, cookies)
 			if rule == nil {
 				logger.Warn("Wrong cookie")
 				continue
@@ -86,7 +86,7 @@ func parseCondition(m bson.M) *Condition {
 		for _, val := range body {
 			conditionsBody := []Condition{}
 			for keyBody, valueBody := range val {
-				rule = parseRule(key, CONDITION_BODY, val)
+				rule = parseRule(key, CONDITION_BODY, val, body)
 				if rule == nil {
 					logger.Warn("Wrong cookie")
 					continue
@@ -111,16 +111,16 @@ func parseCondition(m bson.M) *Condition {
 	return &OrCondition{conditions}
 }
 
-func parseRule(cmd string, namespace string, value interface{}) *Rule {
-	switch t := value.(type) {
-	    case string:
-	        return parseRuleStr(cmd, value)
-	    case []interface {}:
+func parseRule(cmd string, namespace string, value interface{}, node []interface{}) *Rule {
+	if value.(type) == string {
+        return parseRuleStr(cmd, value, node)
+    }
+	if value.(type) == []interface {} {
 	        expr, ok = value["expression"]
 	        if !ok {
 	        	return nil
 	        }
-	        ruleBase = parseRuleStr(cmd, expr)
+	        ruleBase = parseRuleStr(cmd, expr, node)
 	        ruleAndNode, ok = value["and"]
 	        if ok {
 	        	conditionsAndBase = []Condition{ruleBase}
@@ -150,7 +150,7 @@ func parseRuleInnerBlock(node bson.M) []Condition {
 	for _, item := range node {
 		conditionsBlock := []Condition{}
 	    for conditionKey, conditionValue := itemOr {
-			rule = parseRule(conditionKey, namespace, conditionValue)
+			rule = parseRule(conditionKey, namespace, conditionValue, node)
 			if rule == nil {
 				logger.Warn("Wrong")
 				continue
@@ -168,9 +168,18 @@ func parseRuleInnerBlock(node bson.M) []Condition {
 	return conditions
 }
 
-func parseRuleStr(cmd string, value string) *Rule {
+func parseRuleStr(cmd string, value string, node bson.M) *Rule {
 	if strings.Compare(cmd, CMD_EQUAL) {
-		return &EqualToRule{value}
+		caseInsensitive = false
+		caseInsensitive, ok = node["caseInsensitive"]
+		if !ok {
+			caseInsensitive = false
+		}
+
+		return &EqualToRule{
+			val: value
+    		caseInsensitive: caseInsensitive
+		}
 	}
 	if strings.Compare(cmd, CMD_EQUAL_BINARY) {
 		return &EqualToBinaryRule{byte[](value)}
