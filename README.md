@@ -52,6 +52,7 @@ Stub matching and verification queries can use the following request attributes:
 * **cookies**
 * **bodyPatterns**
 * **basicAuthCredentials**
+* **matchingType** accept only **ALL** (default) params or **ANY** of params
 
 ### Comparation
 
