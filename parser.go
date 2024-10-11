@@ -123,58 +123,49 @@ func parseRule(cmd string, namespace string, value interface{}) *Rule {
 	        ruleBase = parseRuleStr(cmd, expr)
 	        ruleAndNode, ok = value["and"]
 	        if ok {
-				conditionsAnd := []Condition{ruleBase}
-	        	for _, itemAnd := range ruleAndNode {
-	        		conditionsAndBlock := []Condition{}
-	        		for conditionKey, conditionValue := itemAnd {
-	        			rule = parseRule(key, namespace, val)
-						if rule == nil {
-							logger.Warn("Wrong")
-							continue
-						}
-						append(conditionsAndBlock, DataCondition {
-							Prop: namespace
-							Key: key
-						    Rule: rule
-						})
-	        		}
-	        		if len(conditionsAndBlock) > 0 {
-	        			append(conditionsAnd, AndCondition{conditionsAndBlock})
-	        		}
-				}
+	        	conditionsAndBase = []Condition{ruleBase}
+	        	conditionsAnd = parseRuleInnerBlock(ruleAndNode)
 				if len(conditionsAnd) > 1 {
-					return AndCondition{conditionsAnd}
+					append(conditionsAndBase, conditionsAnd..)
+					return AndCondition{conditionsAndBase}
 				}
 				return ruleBase
 	        }
 	        ruleOrNode, ok = value["or"]
 	        if ok {
-				conditionsOr := []Condition{ruleBase}
-	        	for _, itemOr := range ruleOrNode {
-	        		conditionsOrBlock := []Condition{}
-	        		for conditionKey, conditionValue := itemOr {
-	        			rule = parseRule(key, namespace, val)
-						if rule == nil {
-							logger.Warn("Wrong")
-							continue
-						}
-						append(conditionsOrBlock, DataCondition {
-							Prop: namespace
-							Key: key
-						    Rule: rule
-						})
-	        		}
-	        		if len(conditionsOrBlock) > 0 {
-	        			append(conditionsOr, AndCondition{conditionsOrBlock})
-	        		}
-				}
+	        	conditionsOrBase = []Condition{ruleBase}
+	        	conditionsOr = parseRuleInnerBlock(ruleOrNode)
 				if len(conditionsOr) > 1 {
-					return OrCondition{conditionsOr}
+					append(conditionsOrBase, conditionsOr...)
+					return OrCondition{conditionsOrBase}
 				}
 				return ruleBase
 	        }
     }
     return nil
+}
+
+func parseRuleInnerBlock(node bson.M) []Condition {
+	conditions := []Condition{}
+	for _, item := range node {
+		conditionsBlock := []Condition{}
+	    for conditionKey, conditionValue := itemOr {
+			rule = parseRule(conditionKey, namespace, conditionValue)
+			if rule == nil {
+				logger.Warn("Wrong")
+				continue
+			}
+			append(conditionsBlock, DataCondition {
+				Prop: namespace
+				Key: key
+			    Rule: rule
+			})
+		}
+		if len(conditionsBlock) > 0 {
+			append(conditions, AndCondition{conditionsBlock})
+		}
+	}
+	return conditions
 }
 
 func parseRuleStr(cmd string, value string) *Rule {
