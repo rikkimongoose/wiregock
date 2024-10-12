@@ -176,9 +176,11 @@ func installWiremock(server *fiber.App, wiremock bson.M) {
             return nil
         }
 
-        traceId = c.Params("traceId")
+        traceId = c.Params("traceparent")
         if traceId != nil {
-            c.Set("traceId", traceId)
+            c.Set("traceparent", traceId)
+        } else {
+            c.Set("traceparent", generateTraceparent())
         }
 
         wiremockResponse, ok := wiremock["response"]
