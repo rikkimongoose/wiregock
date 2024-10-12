@@ -30,6 +30,7 @@ Stub matching and verification queries can use the following request attributes:
 * Basic authentication (a special case of header matching)
 * Cookies
 * Request body
+* Traceparent
 
 ### HTTP methods
 
