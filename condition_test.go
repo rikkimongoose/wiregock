@@ -1,36 +1,87 @@
 package wiregock
 
 import (
-    "github.com/gofiber/fiber/v3"
+	"encoding/json"
+	"testing"
 )
 
-type WebContextMock struct {
-	body string
-	headers map[string]string
-	params map[string]string
-	cookies map[string]string
+type TrueRule struct {
 }
 
-func (mock *WebContextMock) Body() []byte {
-	return []byte{mock.body}
+type FalseRule struct {
 }
 
-func (mock *WebContextMock) Get(key string, defaultValue ...string) string {
-	if val, ok := mock.headers[key]; ok {
-	    return val
-	}
-	return defaultValue
+func (rule *TrueRule) check(str string) (bool, error) {
+	return true, nil
 }
 
-func (mock *WebContextMock) Params(key string, defaultValue ...string) string {
-	if val, ok := mock.params[key]; ok {
-	    return val
-	}
-	return defaultValue
+func (rule *FalseRule) check(str string) (bool, error) {
+	return false, nil
 }
-func (mock *WebContextMock) Cookies(key string, defaultValue ...string) string {
-	if val, ok := mock.cookies[key]; ok {
-	    return val
+
+func TestMarshaling(t *testing.T) {
+	body := []byte(`
+{
+    "request": {
+        "urlPath": "/everything",
+        "method": "ANY",
+        "headers": {
+            "Accept": {
+                "contains": "xml"
+            }
+        },
+        "queryParameters": {
+            "search_term": {
+                "equalTo": "WireMock"
+            }
+        },
+        "cookies": {
+            "session": {
+                "matches": ".*12345.*"
+            }
+        },
+        "bodyPatterns": [
+            {
+                "equalToXml": "<search-results />"
+            },
+            {
+                "matchesXPath": "//search-results"
+            }
+        ],
+        "multipartPatterns": [
+            {
+                "matchingType": "ANY",
+                "headers": {
+                    "Content-Disposition": {
+                        "contains": "name=\"info\""
+                    },
+                    "Content-Type": {
+                        "contains": "charset"
+                    }
+                },
+                "bodyPatterns": [
+                    {
+                        "equalToJson": "{}"
+                    }
+                ]
+            }
+        ],
+        "basicAuthCredentials": {
+            "username": "jeff@example.com",
+            "password": "jeffteenjefftyjeff"
+        }
+    },
+    "response": {
+        "status": 200
+    }
+}`)
+
+	var mockData MockData
+	err := json.Unmarshal(body, &mockData)
+	if err != nil {
+    	t.Fatalf(`Error parsing JSON format: %s`, err)
 	}
-	return defaultValue
+	if *mockData.Request.QueryParameters["search_term"].EqualTo != "WireMock" {
+    	t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.QueryParameters[\"search_term\"].EqualTo")
+	}
 }

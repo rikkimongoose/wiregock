@@ -1,4 +1,0 @@
-package wiregock
-
-import (
-)
