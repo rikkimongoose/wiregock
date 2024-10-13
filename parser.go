@@ -1,7 +1,8 @@
 package wiregock
 
 import (
-    "strings"
+    "time"
+    "regexp"
 )
 
 type WebContext interface {
@@ -11,60 +12,76 @@ type WebContext interface {
 	Cookies(key string, defaultValue ...string) string
 }
 
-func loaderGet(context WebContext, key string) func() (string, bool) {
-	return func() (string, bool) {
+func loaderGet(context WebContext, key string) func() string {
+	return func() string {
 		data := context.Get(key, "")
-		return data, strings.EqualFold(data, "")
+		return data
 	}
 }
 
-func loaderParams(context WebContext, key string) func() (string, bool) {
-	return func() (string, bool) {
+func loaderParams(context WebContext, key string) func() string {
+	return func() string {
 		data := context.Params(key, "")
-		return data, strings.EqualFold(data, "")
+		return data
 	}
 }
 
-func loaderCookies(context WebContext, key string) func() (string, bool) {
-	return func() (string, bool) {
+func loaderCookies(context WebContext, key string) func() string {
+	return func() string {
 		data := context.Cookies(key, "")
-		return data, strings.EqualFold(data, "")
+		return data
 	}
 }
 
-func loaderBody(context WebContext) func() (string, bool) {
-	return func() (string, bool) {
+func loaderBody(context WebContext) func() string {
+	return func() string {
 		body := string(context.Body()[:])
-		return body, len(body) > 0
+		return body
 	}
 }
 
-func parseCondition(request *MockRequest, context WebContext) Condition {
+func parseCondition(request *MockRequest, context WebContext) (Condition, error) {
 	conditions := []Condition{}
 	if request.Headers != nil {
 		for key, value := range request.Headers {
-			conditions = append(conditions, createConditions(value, loaderGet(context, key)))
+			newCondition, err := createCondition(value, loaderGet(context, key))
+			if err != nil {
+				return nil, err
+			}
+			conditions = append(conditions, newCondition)
 		}
 	}
 
 	if request.QueryParameters != nil {
 		for key, value := range request.QueryParameters {
-			conditions = append(conditions, createConditions(value, loaderParams(context, key)))
+			newCondition, err :=  createCondition(value, loaderParams(context, key))
+			if err != nil {
+				return nil, err
+			}
+			conditions = append(conditions, newCondition)
 		}
 	}
 
 	if request.Cookies != nil {
 		for key, value := range request.Cookies {
-			conditions = append(conditions, createConditions(value, loaderCookies(context, key)))
+			newCondition, err := createCondition(value, loaderCookies(context, key))
+			if err != nil {
+				return nil, err
+			}
+			conditions = append(conditions, newCondition)
 		}
 	}
 
 	if len(request.BodyPatterns) > 0 {
 		for _, value := range request.BodyPatterns {
-			conditions = append(conditions, createConditions(value, loaderBody(context)))
+			newCondition, err := createCondition(value, loaderBody(context))
+			if err != nil {
+				return nil, err
+			}
+			conditions = append(conditions, newCondition)
 		}
 	}
-	return &AndCondition{conditions}
+	return &AndCondition{conditions}, nil
 }
 
 type ConditionRules struct {
@@ -72,27 +89,97 @@ type ConditionRules struct {
     rulesOr []Rule
 }
 
-func createConditions(filter Filter, loaderMethod func() (string, bool)) DataCondition {
-	rulesAnd, rulesOr := parseRules(&filter)
-	return DataCondition{loaderMethod, rulesAnd, rulesOr}
+func createCondition(filter Filter, loaderMethod func() string) (DataCondition, error) {
+	rulesAnd, rulesOr, err := parseRules(&filter)
+	return DataCondition{loaderMethod, rulesAnd, rulesOr}, err
 }
 
-func parseRules(filter *Filter) ([]Rule, []Rule) {
-    rulesAnd := []Rule{parseRule(filter)}
+func parseRules(filter *Filter) ([]Rule, []Rule, error) {
+    rulesAnd, err := parseRule(filter)
+    if err != nil {
+    	return nil, nil, err
+    }
     rulesOr := []Rule{}
     if len(filter.And) > 0 {
     	for _, filterAnd := range filter.And {
-    		rulesAnd = append(rulesAnd, parseRule(&filterAnd))
+    		parsedRules, err := parseRule(&filterAnd)
+    		if err != nil {
+    			return nil, nil, err
+    		}
+    		rulesAnd = append(rulesAnd, parsedRules...)
     	}
     }
     if len(filter.Or) > 0 {
     	for _, filterOr := range filter.Or {
-    		rulesOr = append(rulesOr, parseRule(&filterOr))
+    		parsedRules, err := parseRule(&filterOr)
+    		if err != nil {
+    			return nil, nil, err
+    		}
+    		rulesOr = append(rulesOr, parsedRules...)
     	}
     }
-    return rulesAnd, rulesOr
+    return rulesAnd, rulesOr, nil
 }
 
-func parseRule(filter *Filter) Rule {
-	return TrueRule{}
+func parseRule(filter *Filter) ([]Rule, error) {
+	rules := []Rule{}
+	caseInsensitive := false
+	if filter.CaseInsensitive != nil {
+		caseInsensitive = *filter.CaseInsensitive
+	}
+
+	if filter.Contains != nil {
+		val := *filter.Contains
+		rules = append(rules, ContainsRule{val, caseInsensitive})
+	}
+
+	if filter.EqualTo != nil {
+		val := *filter.EqualTo
+		rules = append(rules, EqualToRule{val, caseInsensitive})
+	}
+
+	if filter.BinaryEqualTo != nil {
+		val := *filter.BinaryEqualTo
+		rules = append(rules, EqualToBinaryRule{[]byte(val)})
+	}
+
+	if filter.DoesNotContain != nil {
+		val := *filter.DoesNotContain
+		rules = append(rules, NotRule{ContainsRule{val, caseInsensitive}})
+	}
+
+	if filter.Matches != nil {
+		regexStr := *filter.Matches
+		regex, err := regexp.Compile(regexStr)
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, RegExRule{regex})
+	}
+
+	if filter.DoesNotMatch != nil {
+		regexStr := *filter.DoesNotMatch
+		regex, err := regexp.Compile(regexStr)
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, NotRule{RegExRule{regex}})
+	}
+
+	if filter.Absent != nil {
+		absent := *filter.Absent
+		if absent {
+			rules = append(rules, AbsentRule{})
+		} else {
+			rules = append(rules, NotRule{AbsentRule{}})
+		}
+	}
+	actualFormat := time.RFC3339
+	if filter.ActualFormat != nil {
+		actualFormat = *filter.ActualFormat
+	}
+	if filter.Before != nil || filter.After != nil || filter.EqualToDateTime != nil {
+		rules = append(rules, DateTimeRule{filter.Before, filter.After, filter.EqualToDateTime, actualFormat})
+	}
+	return rules, nil
 }

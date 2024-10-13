@@ -17,7 +17,7 @@ type Rule interface {
 }
 
 type NotRule struct {
-    base *Rule
+    base Rule
 }
 
 type EqualToRule struct {
@@ -61,6 +61,9 @@ type EqualToJsonRule struct {
     node *jsonquery.Node
 }
 
+type AbsentRule struct {
+}
+
 type TrueRule struct {
 }
 
@@ -68,7 +71,7 @@ type FalseRule struct {
 }
 
 func (rule NotRule) check(str string) (bool, error) {
-	res, err := (*rule.base).check(str)
+	res, err := rule.base.check(str)
 	return !res, err
 }
 
@@ -144,6 +147,10 @@ func (rule MatchesXPathRule) check(str string) (bool, error) {
 		return (xmlquery.QuerySelector(node, rule.xPath) != nil), nil
 	}
 	return (jsonquery.QuerySelector(node, rule.xPath) != nil), nil
+}
+
+func (rule AbsentRule) check(str string) (bool, error) {
+	return len(str) == 0, nil
 }
 
 func (rule TrueRule) check(str string) (bool, error) {

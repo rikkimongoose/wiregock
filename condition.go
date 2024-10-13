@@ -55,16 +55,13 @@ type Condition interface {
 }
 
 type DataCondition struct {
-    loaderMethod func() (string, bool)
+    loaderMethod func() string
     rulesAnd []Rule
     rulesOr []Rule
 }
 
 func (c DataCondition) check() (bool, error) {
-    data, ok := c.loaderMethod()
-    if !ok {
-        return false, nil
-    }
+    data := c.loaderMethod() //to enable support of Absent keyword, the ok is ignored
     for _, ruleAnd := range c.rulesAnd {
         res, err := ruleAnd.check(data)
         if err != nil {
