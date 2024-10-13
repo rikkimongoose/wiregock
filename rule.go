@@ -61,23 +61,29 @@ type EqualToJsonRule struct {
     node *jsonquery.Node
 }
 
-func (rule *NotRule) check(str string) (bool, error) {
+type TrueRule struct {
+}
+
+type FalseRule struct {
+}
+
+func (rule NotRule) check(str string) (bool, error) {
 	res, err := (*rule.base).check(str)
 	return !res, err
 }
 
-func (rule *EqualToRule) check(str string) (bool, error) {
+func (rule EqualToRule) check(str string) (bool, error) {
 	if rule.caseInsensitive {
 		return strings.EqualFold(rule.val, str), nil
 	}
 	return strings.Compare(rule.val, str) == 0, nil
 }
 
-func (rule *EqualToBinaryRule) check(str string) (bool, error) {
+func (rule EqualToBinaryRule) check(str string) (bool, error) {
 	return bytes.Compare(rule.val, []byte(str)) == 0, nil
 }
 
-func (rule *DateTimeRule) check(str string) (bool, error) {
+func (rule DateTimeRule) check(str string) (bool, error) {
 	sourceTime, error := time.Parse(rule.timeFormat, str)
 	if error != nil {
 		return false, error
@@ -94,25 +100,25 @@ func (rule *DateTimeRule) check(str string) (bool, error) {
 	return true, nil
 }
 
-func (rule *ContainsRule) check(str string) (bool, error) {
+func (rule ContainsRule) check(str string) (bool, error) {
 	if rule.caseInsensitive {
 		return strings.Contains(strings.ToLower(str), strings.ToLower(rule.val)), nil
 	}
 	return strings.Contains(str, rule.val), nil
 }
 
-func (rule *WildcardsRule) check(str string) (bool, error) {
+func (rule WildcardsRule) check(str string) (bool, error) {
 	if rule.caseInsensitive {
 		return wildcard.Match(strings.ToLower(rule.val), strings.ToLower(str)), nil
 	}
 	return wildcard.Match(rule.val, str), nil
 }
 
-func (rule *RegExRule) check(str string) (bool, error) {
+func (rule RegExRule) check(str string) (bool, error) {
 	return rule.regex.MatchString(str), nil
 }
 
-func (rule *EqualToXmlRule) check(str string) (bool, error) {
+func (rule EqualToXmlRule) check(str string) (bool, error) {
 	node, err := xmlquery.Parse(strings.NewReader(str))
 	if err != nil {
 		return false, err
@@ -120,7 +126,7 @@ func (rule *EqualToXmlRule) check(str string) (bool, error) {
 	return reflect.DeepEqual(&rule.node, node), nil
 }
 
-func (rule *EqualToJsonRule) check(str string) (bool, error) {
+func (rule EqualToJsonRule) check(str string) (bool, error) {
 	node, err := jsonquery.Parse(strings.NewReader(str))
 	if err != nil {
 		return false, err
@@ -128,7 +134,7 @@ func (rule *EqualToJsonRule) check(str string) (bool, error) {
 	return reflect.DeepEqual(&rule.node, node), nil
 }
 
-func (rule *MatchesXPathRule) check(str string) (bool, error) {
+func (rule MatchesXPathRule) check(str string) (bool, error) {
 	node, err := jsonquery.Parse(strings.NewReader(str))
 	if err != nil {
 		node, err := xmlquery.Parse(strings.NewReader(str))
@@ -138,4 +144,12 @@ func (rule *MatchesXPathRule) check(str string) (bool, error) {
 		return (xmlquery.QuerySelector(node, rule.xPath) != nil), nil
 	}
 	return (jsonquery.QuerySelector(node, rule.xPath) != nil), nil
+}
+
+func (rule TrueRule) check(str string) (bool, error) {
+	return true, nil
+}
+
+func (rule FalseRule) check(str string) (bool, error) {
+	return false, nil
 }

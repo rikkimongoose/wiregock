@@ -5,20 +5,6 @@ import (
 	"testing"
 )
 
-type TrueRule struct {
-}
-
-type FalseRule struct {
-}
-
-func (rule *TrueRule) check(str string) (bool, error) {
-	return true, nil
-}
-
-func (rule *FalseRule) check(str string) (bool, error) {
-	return false, nil
-}
-
 func TestMarshaling(t *testing.T) {
 	body := []byte(`
 {
