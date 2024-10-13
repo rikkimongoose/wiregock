@@ -3,13 +3,15 @@ module github.com/rikkimongoose/wiregock
 go 1.22.1
 
 require (
+	github.com/antchfx/jsonquery v1.3.6
+	github.com/antchfx/xmlquery v1.4.2
+	github.com/IGLOU-EU/go-wildcard/v2 v2.0.2
+	github.com/antchfx/xpath v1.3.2
+)
+
+require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
-	github.com/IGLOU-EU/go-wildcard/v2 v2.0.2 // indirect
 	github.com/andybalholm/brotli v1.1.1 // indirect
-	github.com/antchfx/jsonquery v1.3.6 // indirect
-	github.com/antchfx/xmlquery v1.4.2 // indirect
-	github.com/antchfx/xpath v1.3.2 // indirect
-	github.com/gofiber/fiber/v3 v3.0.0-beta.3 // indirect
 	github.com/gofiber/utils/v2 v2.0.0-beta.6 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect
