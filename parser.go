@@ -5,46 +5,18 @@ import (
     "regexp"
 )
 
-type WebContext interface {
-	Body() []byte
-	Get(key string, defaultValue ...string) string
-	Params(key string, defaultValue ...string) string
-	Cookies(key string, defaultValue ...string) string
+type DataContext struct {
+	Body func() string
+	Get func(key string) string
+	Params func(key string) string
+	Cookies func(key string) string
 }
 
-func loaderGet(context WebContext, key string) func() string {
-	return func() string {
-		data := context.Get(key, "")
-		return data
-	}
-}
-
-func loaderParams(context WebContext, key string) func() string {
-	return func() string {
-		data := context.Params(key, "")
-		return data
-	}
-}
-
-func loaderCookies(context WebContext, key string) func() string {
-	return func() string {
-		data := context.Cookies(key, "")
-		return data
-	}
-}
-
-func loaderBody(context WebContext) func() string {
-	return func() string {
-		body := string(context.Body()[:])
-		return body
-	}
-}
-
-func parseCondition(request *MockRequest, context WebContext) (Condition, error) {
+func parseCondition(request *MockRequest, context *DataContext) (Condition, error) {
 	conditions := []Condition{}
 	if request.Headers != nil {
 		for key, value := range request.Headers {
-			newCondition, err := createCondition(value, loaderGet(context, key))
+			newCondition, err := createCondition(value, func() string { return context.Get(key) })
 			if err != nil {
 				return nil, err
 			}
@@ -54,7 +26,7 @@ func parseCondition(request *MockRequest, context WebContext) (Condition, error)
 
 	if request.QueryParameters != nil {
 		for key, value := range request.QueryParameters {
-			newCondition, err :=  createCondition(value, loaderParams(context, key))
+			newCondition, err := createCondition(value, func() string { return context.Params(key) })
 			if err != nil {
 				return nil, err
 			}
@@ -64,7 +36,7 @@ func parseCondition(request *MockRequest, context WebContext) (Condition, error)
 
 	if request.Cookies != nil {
 		for key, value := range request.Cookies {
-			newCondition, err := createCondition(value, loaderCookies(context, key))
+			newCondition, err := createCondition(value, func() string { return context.Cookies(key) })
 			if err != nil {
 				return nil, err
 			}
@@ -74,7 +46,7 @@ func parseCondition(request *MockRequest, context WebContext) (Condition, error)
 
 	if len(request.BodyPatterns) > 0 {
 		for _, value := range request.BodyPatterns {
-			newCondition, err := createCondition(value, loaderBody(context))
+			newCondition, err := createCondition(value, func() string { return context.Body() })
 			if err != nil {
 				return nil, err
 			}
