@@ -61,7 +61,10 @@ type DataCondition struct {
 }
 
 func (c DataCondition) check() (bool, error) {
-    data := c.loaderMethod() //to enable support of Absent keyword, the ok is ignored
+    data := ""
+    if c.loaderMethod != nil {
+        data = c.loaderMethod()
+    }
     for _, ruleAnd := range c.rulesAnd {
         res, err := ruleAnd.check(data)
         if err != nil {
@@ -83,21 +86,11 @@ func (c DataCondition) check() (bool, error) {
     return len(c.rulesAnd) > 0, nil
 }
 
-type ExistingCondition struct {
-    loaderData func() (string, bool)
-    rule *Rule
-}
-
-func (c *ExistingCondition) check() (bool, error) {
-    _, ok := c.loaderData()
-    return ok, nil
-}
-
 type AndCondition struct {
     conditions []Condition
 }
 
-func (c *AndCondition) check() (bool, error) {
+func (c AndCondition) check() (bool, error) {
     for _, cond := range c.conditions {
         res, err := cond.check() 
         if err != nil {
@@ -114,7 +107,7 @@ type OrCondition struct {
     conditions []Condition
 }
 
-func (c *OrCondition) check() (bool, error) {
+func (c OrCondition) check() (bool, error) {
     for _, cond := range c.conditions {
         res, err := cond.check()
         if err != nil {

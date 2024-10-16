@@ -53,12 +53,7 @@ func parseCondition(request *MockRequest, context *DataContext) (Condition, erro
 			conditions = append(conditions, newCondition)
 		}
 	}
-	return &AndCondition{conditions}, nil
-}
-
-type ConditionRules struct {
-    rulesAnd []Rule
-    rulesOr []Rule
+	return AndCondition{conditions}, nil
 }
 
 func createCondition(filter Filter, loaderMethod func() string) (DataCondition, error) {
@@ -142,8 +137,6 @@ func parseRule(filter *Filter) ([]Rule, error) {
 		absent := *filter.Absent
 		if absent {
 			rules = append(rules, AbsentRule{})
-		} else {
-			rules = append(rules, NotRule{AbsentRule{}})
 		}
 	}
 	actualFormat := time.RFC3339
