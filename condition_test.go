@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestMarshaling(t *testing.T) {
+func TestUnmarshaling(t *testing.T) {
 	body := []byte(`
 {
     "request": {
@@ -85,8 +85,8 @@ func TestMarshaling(t *testing.T) {
     if *mockData.Request.BodyPatterns[0].EqualToXml != "<search-results />" {
         t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.BodyPatterns[0].EqualToXml")
     }
-    if *mockData.Request.BodyPatterns[1].MatchesXPath != "//search-results" {
-        t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.BodyPatterns[1].MatchesXPath")
+    if mockData.Request.BodyPatterns[1].MatchesXPath.Expression != "//search-results" {
+        t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.BodyPatterns[1].MatchesXPath.Expression")
     }
     if *mockData.Request.BasicAuthCredentials.Username != "jeff@example.com" {
         t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.BasicAuthCredentials.Username")
@@ -136,5 +136,65 @@ func TestAndCondition(t *testing.T) {
     }
     if !res {
         t.Fatalf(`Wrong execution conditionTrueTrueOr`)
+    }
+}
+
+
+func TestUnmarshalingXPathFilter(t *testing.T) {
+    body := []byte(`
+{
+    "request": {
+        "urlPath": "/everything",
+        "method": "ANY",
+        "headers": {
+            "Accept": {
+                "contains": "xml"
+            }
+        },
+        "queryParameters": {
+            "search_term": {
+                "equalTo": "WireMock"
+            }
+        },
+        "bodyPatterns": [
+            {
+                "equalToXml": "<search-results />"
+            },
+            {
+                "matchesXPath": {
+                    "expression": "//search-results",
+                    "contains": "wash",
+                    "equalToXml": "<todo-item>Do the washing</todo-item>",
+                    "equalToJson": "{}"
+                }
+                
+            }
+        ],
+        "basicAuthCredentials": {
+            "username": "jeff@example.com",
+            "password": "jeffteenjefftyjeff"
+        }
+    },
+    "response": {
+        "status": 200
+    }
+}`)
+
+    var mockData MockData
+    err := json.Unmarshal(body, &mockData)
+    if err != nil {
+        t.Fatalf(`Error parsing JSON format: %s`, err)
+    }
+    if mockData.Request.BodyPatterns[1].MatchesXPath.Expression != "//search-results" {
+        t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.BodyPatterns[1].MatchesXPath.Expression")
+    }
+    if *mockData.Request.BodyPatterns[1].MatchesXPath.Contains != "wash" {
+        t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.BodyPatterns[1].MatchesXPath.Contains")
+    }
+    if *mockData.Request.BodyPatterns[1].MatchesXPath.EqualToXml != "<todo-item>Do the washing</todo-item>" {
+        t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.BodyPatterns[1].MatchesXPath.EqualToXml")
+    }
+    if *mockData.Request.BodyPatterns[1].MatchesXPath.EqualToJson != "{}" {
+        t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.BodyPatterns[1].MatchesXPath.EqualToJson")
     }
 }
