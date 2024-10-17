@@ -2,29 +2,37 @@ package wiregock
 
 import (
     "time"
+    "encoding/json"
 )
 
 type Filter struct {
-    Contains            *string    `json:"contains,omitempty" bson:"contains,omitempty"`
-    EqualTo             *string    `json:"equalTo,omitempty" bson:"equalTo,omitempty"`
-    CaseInsensitive     *bool      `json:"caseInsensitive,omitempty" bson:"caseInsensitive,omitempty"`
-    BinaryEqualTo       *string    `json:"binaryEqualTo,omitempty" bson:"binaryEqualTo,omitempty"`
-    DoesNotContain      *string    `json:"doesNotContain,omitempty" bson:"doesNotContain,omitempty"`
-    Matches             *string    `json:"matches,omitempty" bson:"matches,omitempty"`
-    DoesNotMatch        *string    `json:"doesNotMatch,omitempty" bson:"doesNotMatch,omitempty"`
-    Absent              *bool      `json:"absent,omitempty" bson:"absent,omitempty"`
-    And                 []Filter   `json:"and,omitempty" bson:"and,omitempty"`
-    Or                  []Filter   `json:"or,omitempty" bson:"or,omitempty"`
-    Before              *time.Time `json:"before,omitempty" bson:"before,omitempty"` // "2021-05-01T00:00:00Z"
-    After               *time.Time `json:"after,omitempty" bson:"after,omitempty"` // "2021-05-01T00:00:00Z"
-    EqualToDateTime     *time.Time `json:"equalToDateTime,omitempty" bson:"equalToDateTime,omitempty"`
-    ActualFormat        *string    `json:"actualFormat,omitempty" bson:"actualFormat,omitempty"`
-    EqualToJson         *string    `json:"equalToJson,omitempty" bson:"equalToJson,omitempty"`
-    IgnoreArrayOrder    *bool      `json:"ignoreArrayOrder,omitempty" bson:"ignoreArrayOrder,omitempty"`
-    IgnoreExtraElements *bool      `json:"ignoreExtraElements,omitempty" bson:"ignoreExtraElements,omitempty"`
-    MatchesJsonPath     *string    `json:"matchesJsonPath,omitempty" bson:"matchesJsonPath,omitempty"`
-    EqualToXml          *string    `json:"equalToXml,omitempty" bson:"equalToXml,omitempty"`
-    MatchesXPath        *string    `json:"matchesXPath,omitempty" bson:"matchesXPath,omitempty"`
+    Contains            *string      `json:"contains,omitempty" bson:"contains,omitempty"`
+    EqualTo             *string      `json:"equalTo,omitempty" bson:"equalTo,omitempty"`
+    CaseInsensitive     *bool        `json:"caseInsensitive,omitempty" bson:"caseInsensitive,omitempty"`
+    BinaryEqualTo       *string      `json:"binaryEqualTo,omitempty" bson:"binaryEqualTo,omitempty"`
+    DoesNotContain      *string      `json:"doesNotContain,omitempty" bson:"doesNotContain,omitempty"`
+    Matches             *string      `json:"matches,omitempty" bson:"matches,omitempty"`
+    DoesNotMatch        *string      `json:"doesNotMatch,omitempty" bson:"doesNotMatch,omitempty"`
+    Absent              *bool        `json:"absent,omitempty" bson:"absent,omitempty"`
+    And                 []Filter     `json:"and,omitempty" bson:"and,omitempty"`
+    Or                  []Filter     `json:"or,omitempty" bson:"or,omitempty"`
+    Before              *time.Time   `json:"before,omitempty" bson:"before,omitempty"` // "2021-05-01T00:00:00Z"
+    After               *time.Time   `json:"after,omitempty" bson:"after,omitempty"` // "2021-05-01T00:00:00Z"
+    EqualToDateTime     *time.Time   `json:"equalToDateTime,omitempty" bson:"equalToDateTime,omitempty"`
+    ActualFormat        *string      `json:"actualFormat,omitempty" bson:"actualFormat,omitempty"`
+    EqualToJson         *string      `json:"equalToJson,omitempty" bson:"equalToJson,omitempty"`
+    IgnoreArrayOrder    *bool        `json:"ignoreArrayOrder,omitempty" bson:"ignoreArrayOrder,omitempty"`
+    IgnoreExtraElements *bool        `json:"ignoreExtraElements,omitempty" bson:"ignoreExtraElements,omitempty"`
+    MatchesJsonPath     *XPathFilter `json:"matchesJsonPath,omitempty" bson:"matchesJsonPath,omitempty"`
+    EqualToXml          *string      `json:"equalToXml,omitempty" bson:"equalToXml,omitempty"`
+    MatchesXPath        *XPathFilter `json:"matchesXPath,omitempty" bson:"matchesXPath,omitempty"`
+}
+
+type XPathFilter struct {
+    Expression      string            `json:"-" bson:"-"`
+    EqualToJson     *string           `json:"equalToJson,omitempty" bson:"equalToJson,omitempty"`
+    EqualToXml      *string           `json:"equalToXml,omitempty" bson:"equalToXml,omitempty"`
+    Contains        *string           `json:"contains,omitempty" bson:"contains,omitempty"`
 }
 
 type MockRequest struct {
@@ -46,7 +54,7 @@ type MockData struct {
     Response *struct {
         Status  *int               `json:"status,omitempty" bson:"status,omitempty"`
         Body    *string            `json:"body,omitempty" bson:"body,omitempty"`
-        Headers map[string]string `json:"headers,omitempty" bson:"headers,omitempty"`
+        Headers map[string]string  `json:"headers,omitempty" bson:"headers,omitempty"`
     } `json:"response" bson:"response"`
 }
 
@@ -118,4 +126,37 @@ func (c OrCondition) check() (bool, error) {
         }
     }
     return false, nil
+}
+
+func (xPathFilter *XPathFilter) UnmarshalJSON(data []byte) error {
+    switch data[0] {
+    case '"':
+        var expression string
+        if err := json.Unmarshal(data, &expression); err != nil {
+            return err
+        }
+        xPathFilter.Expression = expression
+    case '{':
+        fields := make(map[string]string)
+        if err := json.Unmarshal(data, &fields); err != nil {
+            return err
+        }
+        expression, ok := fields["expression"]
+        if ok {
+            xPathFilter.Expression = expression
+        }
+        equalToJson, ok := fields["equalToJson"]
+        if ok {
+            xPathFilter.EqualToJson = &equalToJson
+        }
+        equalToXml, ok := fields["equalToXml"]
+        if ok {
+            xPathFilter.EqualToXml = &equalToXml
+        }
+        contains, ok := fields["contains"]
+        if ok {
+            xPathFilter.Contains = &contains
+        }
+    }
+    return nil
 }

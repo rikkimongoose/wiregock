@@ -43,9 +43,9 @@ func TestParseRule(t *testing.T) {
 	    EqualToJson: &EqualToJson,
 	    IgnoreArrayOrder: &IgnoreArrayOrder,
 	    IgnoreExtraElements: &IgnoreExtraElements,
-	    MatchesJsonPath: &MatchesJsonPath,
+	    MatchesJsonPath: &XPathFilter{Expression:MatchesJsonPath},
 	    EqualToXml: &EqualToXml,
-	    MatchesXPath: &MatchesXPath,
+	    MatchesXPath: &XPathFilter{Expression:MatchesXPath},
 	}
 
 	rules, err := parseRule(&filter)
