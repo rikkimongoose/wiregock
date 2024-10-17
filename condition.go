@@ -3,6 +3,7 @@ package wiregock
 import (
     "time"
     "encoding/json"
+    "go.mongodb.org/mongo-driver/bson"
 )
 
 type Filter struct {
@@ -139,6 +140,39 @@ func (xPathFilter *XPathFilter) UnmarshalJSON(data []byte) error {
     case '{':
         fields := make(map[string]string)
         if err := json.Unmarshal(data, &fields); err != nil {
+            return err
+        }
+        expression, ok := fields["expression"]
+        if ok {
+            xPathFilter.Expression = expression
+        }
+        equalToJson, ok := fields["equalToJson"]
+        if ok {
+            xPathFilter.EqualToJson = &equalToJson
+        }
+        equalToXml, ok := fields["equalToXml"]
+        if ok {
+            xPathFilter.EqualToXml = &equalToXml
+        }
+        contains, ok := fields["contains"]
+        if ok {
+            xPathFilter.Contains = &contains
+        }
+    }
+    return nil
+}
+
+func (xPathFilter *XPathFilter) UnmarshalBSON(data []byte) error {
+    switch data[0] {
+    case '"':
+        var expression string
+        if err := bson.Unmarshal(data, &expression); err != nil {
+            return err
+        }
+        xPathFilter.Expression = expression
+    case '{':
+        fields := make(map[string]string)
+        if err := bson.Unmarshal(data, &fields); err != nil {
             return err
         }
         expression, ok := fields["expression"]

@@ -3,9 +3,9 @@ module github.com/rikkimongoose/wiregock
 go 1.22.1
 
 require (
+	github.com/IGLOU-EU/go-wildcard/v2 v2.0.2
 	github.com/antchfx/jsonquery v1.3.6
 	github.com/antchfx/xmlquery v1.4.2
-	github.com/IGLOU-EU/go-wildcard/v2 v2.0.2
 	github.com/antchfx/xpath v1.3.2
 )
 
@@ -32,6 +32,7 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
+	go.mongodb.org/mongo-driver v1.17.1 // indirect
 	go.mongodb.org/mongo-driver/v2 v2.0.0-beta2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
