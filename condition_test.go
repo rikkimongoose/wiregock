@@ -98,7 +98,7 @@ func TestUnmarshaling(t *testing.T) {
 
 func TestAndCondition(t *testing.T) {
     conditionTrue := AndCondition{[]Condition{DataCondition{rulesAnd:[]Rule{TrueRule{}}}}}
-    res, err := conditionTrue.check()
+    res, err := conditionTrue.Check()
     if err != nil {
         t.Fatalf(`Error conditionTrue: %s`, err)
     }
@@ -106,7 +106,7 @@ func TestAndCondition(t *testing.T) {
         t.Fatalf(`Wrong execution conditionTrue`)
     }
     conditionTrueTrue := AndCondition{[]Condition{DataCondition{rulesAnd:[]Rule{TrueRule{}, TrueRule{}}}}}
-    res, err = conditionTrueTrue.check()
+    res, err = conditionTrueTrue.Check()
     if err != nil {
         t.Fatalf(`Error conditionTrueTrue: %s`, err)
     }
@@ -114,7 +114,7 @@ func TestAndCondition(t *testing.T) {
         t.Fatalf(`Wrong execution conditionTrueTrue`)
     }
     conditionTrueFalse := AndCondition{[]Condition{DataCondition{rulesAnd:[]Rule{TrueRule{}, FalseRule{}}}}}
-    res, err = conditionTrueFalse.check()
+    res, err = conditionTrueFalse.Check()
     if err != nil {
         t.Fatalf(`Error conditionTrueFalse: %s`, err)
     }
@@ -122,7 +122,7 @@ func TestAndCondition(t *testing.T) {
         t.Fatalf(`Wrong execution conditionTrueFalse`)
     }
     conditionTrueFalseOr := AndCondition{[]Condition{DataCondition{rulesOr:[]Rule{TrueRule{}, FalseRule{}}}}}
-    res, err = conditionTrueFalseOr.check()
+    res, err = conditionTrueFalseOr.Check()
     if err != nil {
         t.Fatalf(`Error conditionTrueFalseOr: %s`, err)
     }
@@ -130,7 +130,7 @@ func TestAndCondition(t *testing.T) {
         t.Fatalf(`Wrong execution conditionTrueFalseOr`)
     }
     conditionTrueTrueOr := AndCondition{[]Condition{DataCondition{rulesOr:[]Rule{TrueRule{}, TrueRule{}}}}}
-    res, err = conditionTrueTrueOr.check()
+    res, err = conditionTrueTrueOr.Check()
     if err != nil {
         t.Fatalf(`Error conditionTrueTrueOr: %s`, err)
     }
