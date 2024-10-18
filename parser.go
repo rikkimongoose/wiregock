@@ -13,7 +13,7 @@ type DataContext struct {
 	Cookies func(key string) string
 }
 
-func parseCondition(request *MockRequest, context *DataContext) (Condition, error) {
+func ParseCondition(request *MockRequest, context *DataContext) (Condition, error) {
 	conditions := []Condition{}
 	if request.Headers != nil {
 		for key, value := range request.Headers {

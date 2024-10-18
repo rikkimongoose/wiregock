@@ -26,7 +26,7 @@ func StringWithCharset(length int, charset string) string {
   return result
 }
 
-func generateTraceparent() string {
+func GenerateTraceparent() string {
     block1 := StringWithCharset(32, charset)
     block2 := StringWithCharset(16, charset)
     return fmt.Sprintf("00-%s-%s-01", block1, block2)
