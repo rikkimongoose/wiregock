@@ -6,7 +6,7 @@ import (
 
 var anyMethods = [...]string{ "GET", "HEAD", "OPTIONS", "TRACE", "PUT", "DELETE", "POST", "PATCH", "CONNECT" }
 
-func loadMethods(methodNames string) []string {
+func LoadMethods(methodNames string) []string {
     if strings.Compare(methodNames, "ANY") == 0 {
         return anyMethods[:]
     }

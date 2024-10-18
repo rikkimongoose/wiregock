@@ -61,7 +61,7 @@ type MockData struct {
 }
 
 type Condition interface {
-    check() (bool, error)
+    Check() (bool, error)
 }
 
 type DataCondition struct {
@@ -70,7 +70,7 @@ type DataCondition struct {
     rulesOr []Rule
 }
 
-func (c DataCondition) check() (bool, error) {
+func (c DataCondition) Check() (bool, error) {
     data := ""
     if c.loaderMethod != nil {
         data = c.loaderMethod()
@@ -100,7 +100,7 @@ type AndCondition struct {
     conditions []Condition
 }
 
-func (c AndCondition) check() (bool, error) {
+func (c AndCondition) Check() (bool, error) {
     for _, cond := range c.conditions {
         res, err := cond.check() 
         if err != nil {
@@ -117,7 +117,7 @@ type OrCondition struct {
     conditions []Condition
 }
 
-func (c OrCondition) check() (bool, error) {
+func (c OrCondition) Check() (bool, error) {
     for _, cond := range c.conditions {
         res, err := cond.check()
         if err != nil {
