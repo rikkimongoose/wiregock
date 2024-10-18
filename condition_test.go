@@ -165,6 +165,10 @@ func TestUnmarshalingXPathFilter(t *testing.T) {
                     "expression": "//search-results",
                     "contains": "wash",
                     "equalToXml": "<todo-item>Do the washing</todo-item>",
+                    "xPathNamespaces" : {
+                        "stuff" : "http://stuff.example.com",
+                        "more"  : "http://more.example.com"
+                    },
                     "and": [
                         {
                             "before": "2022-01-01T00:00:00"
@@ -203,5 +207,8 @@ func TestUnmarshalingXPathFilter(t *testing.T) {
     }
     if mockData.Request.BodyPatterns[1].MatchesXPath.EqualToJson != nil {
         t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.BodyPatterns[1].MatchesXPath.EqualToJson")
+    }
+    if mockData.Request.BodyPatterns[1].MatchesXPath.XPathNamespaces == nil {
+        t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.BodyPatterns[1].MatchesXPath.XPathNamespaces")
     }
 }
