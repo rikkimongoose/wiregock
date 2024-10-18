@@ -139,23 +139,24 @@ func (xPathFilter *XPathFilter) UnmarshalJSON(data []byte) error {
         }
         xPathFilter.Expression = expression
     case '{':
-        fields := make(map[string]string)
-        if err := json.Unmarshal(data, &fields); err != nil {
+        var fieldsData interface{}
+        if err := json.Unmarshal(data, &fieldsData); err != nil {
             return err
         }
-        expression, ok := fields["expression"]
+        fields := fieldsData.(map[string]interface{})
+        expression, ok := fields["expression"].(string)
         if ok {
             xPathFilter.Expression = expression
         }
-        equalToJson, ok := fields["equalToJson"]
+        equalToJson, ok := fields["equalToJson"].(string)
         if ok {
             xPathFilter.EqualToJson = &equalToJson
         }
-        equalToXml, ok := fields["equalToXml"]
+        equalToXml, ok := fields["equalToXml"].(string)
         if ok {
             xPathFilter.EqualToXml = &equalToXml
         }
-        contains, ok := fields["contains"]
+        contains, ok := fields["contains"].(string)
         if ok {
             xPathFilter.Contains = &contains
         }
@@ -172,23 +173,24 @@ func (xPathFilter *XPathFilter) UnmarshalBSON(data []byte) error {
         }
         xPathFilter.Expression = expression
     case '{':
-        fields := make(map[string]string)
-        if err := bson.Unmarshal(data, &fields); err != nil {
+        var fieldsData interface{}
+        if err := bson.Unmarshal(data, &fieldsData); err != nil {
             return err
         }
-        expression, ok := fields["expression"]
+        fields := fieldsData.(map[string]interface{})
+        expression, ok := fields["expression"].(string)
         if ok {
             xPathFilter.Expression = expression
         }
-        equalToJson, ok := fields["equalToJson"]
+        equalToJson, ok := fields["equalToJson"].(string)
         if ok {
             xPathFilter.EqualToJson = &equalToJson
         }
-        equalToXml, ok := fields["equalToXml"]
+        equalToXml, ok := fields["equalToXml"].(string)
         if ok {
             xPathFilter.EqualToXml = &equalToXml
         }
-        contains, ok := fields["contains"]
+        contains, ok := fields["contains"].(string)
         if ok {
             xPathFilter.Contains = &contains
         }
