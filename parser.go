@@ -3,7 +3,6 @@ package wiregock
 import (
     "time"
     "regexp"
-    "strings"
 )
 
 type DataContext struct {
@@ -54,10 +53,7 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 			conditions = append(conditions, newCondition)
 		}
 	}
-	if strings.Compare(*request.Method, "ANY") != 0 {
-		return AndCondition{conditions}, nil
-	}
-	return OrCondition{conditions}, nil
+	return AndCondition{conditions}, nil
 }
 
 func createCondition(filter Filter, loaderMethod func() string) (DataCondition, error) {

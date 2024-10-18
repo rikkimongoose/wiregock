@@ -30,10 +30,11 @@ type Filter struct {
 }
 
 type XPathFilter struct {
-    Expression      string            `json:"-" bson:"-"`
-    EqualToJson     *string           `json:"equalToJson,omitempty" bson:"equalToJson,omitempty"`
-    EqualToXml      *string           `json:"equalToXml,omitempty" bson:"equalToXml,omitempty"`
-    Contains        *string           `json:"contains,omitempty" bson:"contains,omitempty"`
+    Expression          string            `json:"-" bson:"-"`
+    EqualToJson         *string           `json:"equalToJson,omitempty" bson:"equalToJson,omitempty"`
+    EqualToXml          *string           `json:"equalToXml,omitempty" bson:"equalToXml,omitempty"`
+    Contains            *string           `json:"contains,omitempty" bson:"contains,omitempty"`
+    XPathNamespaces     map[string]string `json:"xPathNamespaces,omitempty" bson:"xPathNamespaces,omitempty"`
 }
 
 type MockRequest struct {
@@ -143,6 +144,13 @@ func (xPathFilter *XPathFilter) UnmarshalJSON(data []byte) error {
         if err := json.Unmarshal(data, &fieldsData); err != nil {
             return err
         }
+
+        var objmap map[string]json.RawMessage
+        err := json.Unmarshal(data, &objmap)
+        if err != nil {
+            return err
+        }
+
         fields := fieldsData.(map[string]interface{})
         expression, ok := fields["expression"].(string)
         if ok {
@@ -159,6 +167,14 @@ func (xPathFilter *XPathFilter) UnmarshalJSON(data []byte) error {
         contains, ok := fields["contains"].(string)
         if ok {
             xPathFilter.Contains = &contains
+        }
+        xPathNamespacesBytes, ok := objmap["xPathNamespaces"]
+        if ok {
+            xPathNamespaces := make(map[string]string)
+            if err := json.Unmarshal(xPathNamespacesBytes, &xPathNamespaces); err != nil {
+                return err
+            }
+            xPathFilter.XPathNamespaces = xPathNamespaces
         }
     }
     return nil
@@ -177,6 +193,13 @@ func (xPathFilter *XPathFilter) UnmarshalBSON(data []byte) error {
         if err := bson.Unmarshal(data, &fieldsData); err != nil {
             return err
         }
+
+        var objmap map[string]bson.Raw
+        err := json.Unmarshal(data, &objmap)
+        if err != nil {
+            return err
+        }
+
         fields := fieldsData.(map[string]interface{})
         expression, ok := fields["expression"].(string)
         if ok {
@@ -193,6 +216,27 @@ func (xPathFilter *XPathFilter) UnmarshalBSON(data []byte) error {
         contains, ok := fields["contains"].(string)
         if ok {
             xPathFilter.Contains = &contains
+        }
+
+        xPathNamespacesVal, ok := objmap["xPathNamespaces"]
+        if ok {
+            err = xPathNamespacesVal.Validate()
+            if err != nil {
+                return err
+            }
+            xPathNamespacesElements, err := xPathNamespacesVal.Elements()
+            if err != nil {
+                return err
+            }
+            xPathNamespaces := make(map[string]string)
+            for _, xPathNamespacesElement := range xPathNamespacesElements {
+                xPathNamespacesElementValue, ok2 := xPathNamespacesElement.Value().StringValueOK()
+                if !ok2 {
+                    continue
+                }
+                xPathNamespaces[xPathNamespacesElement.Key()] = xPathNamespacesElementValue
+            }
+            xPathFilter.XPathNamespaces = xPathNamespaces
         }
     }
     return nil
