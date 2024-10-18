@@ -56,6 +56,7 @@ type MockData struct {
         Status  *int               `json:"status,omitempty" bson:"status,omitempty"`
         Body    *string            `json:"body,omitempty" bson:"body,omitempty"`
         Headers map[string]string  `json:"headers,omitempty" bson:"headers,omitempty"`
+        Cookies map[string]string  `json:"cookies,omitempty" bson:"cookies,omitempty"`
     } `json:"response" bson:"response"`
 }
 
