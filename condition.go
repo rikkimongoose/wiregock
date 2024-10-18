@@ -102,7 +102,7 @@ type AndCondition struct {
 
 func (c AndCondition) Check() (bool, error) {
     for _, cond := range c.conditions {
-        res, err := cond.check() 
+        res, err := cond.Check() 
         if err != nil {
             return false, err
         }
@@ -119,7 +119,7 @@ type OrCondition struct {
 
 func (c OrCondition) Check() (bool, error) {
     for _, cond := range c.conditions {
-        res, err := cond.check()
+        res, err := cond.Check()
         if err != nil {
             return false, err
         }

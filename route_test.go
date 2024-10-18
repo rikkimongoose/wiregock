@@ -6,13 +6,13 @@ import (
 )
 
 func TestLoadMethodsCheck(t *testing.T) {
-	methods := loadMethods("ANY")
+	methods := LoadMethods("ANY")
 	for _, method := range anyMethods {
 		if !slices.Contains(methods, method) {
         	t.Fatalf(`%s method isn't loaded from ANY`, method)
     	}
 	}
-	methodsGetPost := loadMethods("GET, POST")
+	methodsGetPost := LoadMethods("GET, POST")
 	if !slices.Contains(methodsGetPost, "GET") {
     	t.Fatalf(`%s method isn't loaded from "GET, POST"`, "GET")
 	}
