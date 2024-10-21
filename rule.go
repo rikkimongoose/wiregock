@@ -49,7 +49,11 @@ type RegExRule struct {
     regex *regexp.Regexp
 }
 
-type MatchesXPathRule struct {
+type MatchesJsonXPathRule struct {
+    xPath *xpath.Expr
+}
+
+type MatchesXmlXPathRule struct {
     xPath *xpath.Expr
 }
 
@@ -137,16 +141,20 @@ func (rule EqualToJsonRule) check(str string) (bool, error) {
 	return reflect.DeepEqual(&rule.node, node), nil
 }
 
-func (rule MatchesXPathRule) check(str string) (bool, error) {
+func (rule MatchesJsonXPathRule) check(str string) (bool, error) {
 	node, err := jsonquery.Parse(strings.NewReader(str))
 	if err != nil {
-		node, err := xmlquery.Parse(strings.NewReader(str))
-		if err != nil {
-			return false, err
-		}
-		return (xmlquery.QuerySelector(node, rule.xPath) != nil), nil
+		return false, err
 	}
 	return (jsonquery.QuerySelector(node, rule.xPath) != nil), nil
+}
+
+func (rule MatchesXmlXPathRule) check(str string) (bool, error) {
+	node, err := xmlquery.Parse(strings.NewReader(str))
+	if err != nil {
+		return false, err
+	}
+	return (xmlquery.QuerySelector(node, rule.xPath) != nil), nil
 }
 
 func (rule AbsentRule) check(str string) (bool, error) {

@@ -3,6 +3,8 @@ package wiregock
 import (
 	"encoding/json"
 	"testing"
+    "reflect"
+    "go.mongodb.org/mongo-driver/bson"
 )
 
 func TestUnmarshaling(t *testing.T) {
@@ -210,5 +212,21 @@ func TestUnmarshalingXPathFilter(t *testing.T) {
     }
     if mockData.Request.BodyPatterns[1].MatchesXPath.XPathNamespaces == nil {
         t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.BodyPatterns[1].MatchesXPath.XPathNamespaces")
+    }
+}
+
+func TestUnmarshalingBsonXPathFilter(t *testing.T) {
+    source := map[string]string{"foo": "boo"}
+    bin, err := bson.Marshal(source)
+    if err != nil {
+        t.Fatalf(`Binary marshaling error: %s`, err)
+    }
+    sourceRestored := make(map[string]string)
+    err = bson.Unmarshal(bin, &sourceRestored)
+    if err != nil {
+        t.Fatalf(`bson.Raw unmarshaling error: %s`, err)
+    }
+    if !reflect.DeepEqual(source, sourceRestored) {
+        t.Fatalf(`Wrong unmarshaling`)
     }
 }

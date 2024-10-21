@@ -217,24 +217,11 @@ func (xPathFilter *XPathFilter) UnmarshalBSON(data []byte) error {
         if ok {
             xPathFilter.Contains = &contains
         }
-
-        xPathNamespacesVal, ok := objmap["xPathNamespaces"]
+        xPathNamespacesBytes, ok := objmap["xPathNamespaces"]
         if ok {
-            err = xPathNamespacesVal.Validate()
-            if err != nil {
-                return err
-            }
-            xPathNamespacesElements, err := xPathNamespacesVal.Elements()
-            if err != nil {
-                return err
-            }
             xPathNamespaces := make(map[string]string)
-            for _, xPathNamespacesElement := range xPathNamespacesElements {
-                xPathNamespacesElementValue, ok2 := xPathNamespacesElement.Value().StringValueOK()
-                if !ok2 {
-                    continue
-                }
-                xPathNamespaces[xPathNamespacesElement.Key()] = xPathNamespacesElementValue
+            if err := bson.Unmarshal(xPathNamespacesBytes, &xPathNamespaces); err != nil {
+                return err
             }
             xPathFilter.XPathNamespaces = xPathNamespaces
         }
