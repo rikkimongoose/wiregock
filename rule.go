@@ -168,3 +168,10 @@ func (rule TrueRule) check(str string) (bool, error) {
 func (rule FalseRule) check(str string) (bool, error) {
 	return false, nil
 }
+
+func generateXPath(str string, namespaces map[string]string) (*xpath.Expr, error) {
+	if namespaces != nil {
+		return xpath.CompileWithNS(str, namespaces)
+	}
+	return xpath.Compile(str)
+}
