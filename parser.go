@@ -17,54 +17,58 @@ type DataContext struct {
 	MultipartForm func() multipart.Form
 }
 
-
 func ParseCondition(request *MockRequest, context *DataContext) (Condition, error) {
 	conditions := []Condition{}
 	if request.Headers != nil {
 		for key, value := range request.Headers {
-			newCondition, err := createCondition(value, func() string { return context.Get(key) })
+			newCondition, err := createCondition(&value, func() string { return context.Get(key) })
 			if err != nil {
 				return nil, err
 			}
-			conditions = append(conditions, newCondition)
+			conditions = append(conditions, *newCondition)
 		}
 	}
 
 	if request.QueryParameters != nil {
 		for key, value := range request.QueryParameters {
-			newCondition, err := createCondition(value, func() string { return context.Params(key) })
+			newCondition, err := createCondition(&value, func() string { return context.Params(key) })
 			if err != nil {
 				return nil, err
 			}
-			conditions = append(conditions, newCondition)
+			conditions = append(conditions, *newCondition)
 		}
 	}
 
 	if request.Cookies != nil {
 		for key, value := range request.Cookies {
-			newCondition, err := createCondition(value, func() string { return context.Cookies(key) })
+			newCondition, err := createCondition(&value, func() string { return context.Cookies(key) })
 			if err != nil {
 				return nil, err
 			}
-			conditions = append(conditions, newCondition)
+			conditions = append(conditions, *newCondition)
 		}
 	}
 
 	if len(request.BodyPatterns) > 0 {
 		for _, value := range request.BodyPatterns {
-			newCondition, err := createCondition(value, func() string { return context.Body() })
+			newCondition, err := createCondition(&value, func() string { return context.Body() })
 			if err != nil {
 				return nil, err
 			}
-			conditions = append(conditions, newCondition)
+			conditions = append(conditions, *newCondition)
 		}
 	}
 	return AndCondition{conditions}, nil
 }
 
-func createCondition(filter Filter, loaderMethod func() string) (DataCondition, error) {
-	rules, err := parseRules(&filter, true)
-	return DataCondition{loaderMethod, rules}, err
+/*func createCondition(multipartPatternsData *MultipartPatternsData, loaderMethod func() string) (*DataCondition, error) {
+	rules, err := parseRules(filter, true)
+	return &DataCondition{loaderMethod, rules}, err
+}*/
+
+func createCondition(filter *Filter, loaderMethod func() string) (*DataCondition, error) {
+	rules, err := parseRules(filter, true)
+	return &DataCondition{loaderMethod, rules}, err
 }
 
 func parseRules(filter *Filter, defaultAnd bool) (*BlockRule, error) {
@@ -164,7 +168,15 @@ func parseRule(filter *Filter) ([]Rule, error) {
 		if err != nil {
 			return nil, err
 		}
-		rules = append(rules, EqualToJsonRule{node})
+		ignoreArrayOrder := true
+    	ignoreExtraElements := true
+    	if filter.IgnoreArrayOrder != nil {
+    		ignoreArrayOrder = *filter.IgnoreArrayOrder
+    	}
+    	if filter.IgnoreExtraElements != nil {
+    		ignoreExtraElements = *filter.IgnoreExtraElements
+    	}
+    	rules = append(rules, EqualToJsonRule{node, ignoreArrayOrder, ignoreExtraElements})
 	}
 
 	if filter.EqualToXml != nil {
@@ -172,7 +184,15 @@ func parseRule(filter *Filter) ([]Rule, error) {
 		if err != nil {
 			return nil, err
 		}
-		rules = append(rules, EqualToXmlRule{node})
+		ignoreArrayOrder := true
+    	ignoreExtraElements := true
+    	if filter.IgnoreArrayOrder != nil {
+    		ignoreArrayOrder = *filter.IgnoreArrayOrder
+    	}
+    	if filter.IgnoreExtraElements != nil {
+    		ignoreExtraElements = *filter.IgnoreExtraElements
+    	}
+		rules = append(rules, EqualToXmlRule{node, ignoreArrayOrder, ignoreExtraElements})
 	}
 
 	if filter.MatchesJsonPath != nil {

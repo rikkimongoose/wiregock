@@ -39,22 +39,24 @@ type XPathFilter struct {
 }
 
 type MockRequest struct {
-    UrlPath              *string           `json:"urlPath,omitempty" bson:"urlPath,omitempty"`
-    UrlPattern           *string           `json:"urlPattern,omitempty" bson:"urlPattern,omitempty"`
-    Method               *string           `json:"method,omitempty" bson:"method,omitempty"`
-    Headers              map[string]Filter `json:"headers,omitempty" bson:"headers,omitempty"`
-    QueryParameters      map[string]Filter `json:"queryParameters,omitempty" bson:"queryParameters,omitempty"`
-    Cookies              map[string]Filter `json:"cookies,omitempty" bson:"cookies,omitempty"`
-    BodyPatterns         []Filter          `json:"bodyPatterns,omitempty" bson:"bodyPatterns,omitempty"`
-    MultipartPatterns    []struct {         
-        MatchingType     *string           `json:"matchingType,omitempty" bson:"matchingType,omitempty"`
-        Headers          map[string]Filter `json:"headers,omitempty" bson:"headers,omitempty"`
-        BodyPatterns     []Filter          `json:"bodyPatterns,omitempty" bson:"bodyPatterns,omitempty"`
-    } `json:"multipartPatterns,omitempty" bson:"multipartPatterns,omitempty"`
+    UrlPath              *string                 `json:"urlPath,omitempty" bson:"urlPath,omitempty"`
+    UrlPattern           *string                 `json:"urlPattern,omitempty" bson:"urlPattern,omitempty"`
+    Method               *string                 `json:"method,omitempty" bson:"method,omitempty"`
+    Headers              map[string]Filter       `json:"headers,omitempty" bson:"headers,omitempty"`
+    QueryParameters      map[string]Filter       `json:"queryParameters,omitempty" bson:"queryParameters,omitempty"`
+    Cookies              map[string]Filter       `json:"cookies,omitempty" bson:"cookies,omitempty"`
+    BodyPatterns         []Filter                `json:"bodyPatterns,omitempty" bson:"bodyPatterns,omitempty"`
+    MultipartPatterns    []MultipartPatternsData `json:"multipartPatterns,omitempty" bson:"multipartPatterns,omitempty"`
     BasicAuthCredentials *struct {
         Username *string `json:"username,omitempty" bson:"username,omitempty"`
         Password *string `json:"password,omitempty" bson:"password,omitempty"`
     } `json:"basicAuthCredentials,omitempty" bson:"basicAuthCredentials,omitempty"`
+}
+
+type MultipartPatternsData struct {
+    MatchingType     *string           `json:"matchingType,omitempty" bson:"matchingType,omitempty"`
+    Headers          map[string]Filter `json:"headers,omitempty" bson:"headers,omitempty"`
+    BodyPatterns     []Filter          `json:"bodyPatterns,omitempty" bson:"bodyPatterns,omitempty"`
 }
 
 type MockData struct {

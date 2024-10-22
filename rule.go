@@ -63,10 +63,14 @@ type MatchesXmlXPathRule struct {
 
 type EqualToXmlRule struct {
     node *xmlquery.Node
+    ignoreArrayOrder bool
+    ignoreExtraElements bool
 }
 
 type EqualToJsonRule struct {
     node *jsonquery.Node
+    ignoreArrayOrder bool
+    ignoreExtraElements bool
 }
 
 type AbsentRule struct {
