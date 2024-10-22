@@ -20,11 +20,11 @@ func TestParseRule(t *testing.T) {
     After := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
     EqualToDateTime := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
     ActualFormat := "ActualFormat"
-    EqualToJson := "EqualToJson"
+    EqualToJson := "{ \"total_results\": 4 }"
     IgnoreArrayOrder := true
     IgnoreExtraElements := true
     MatchesJsonPath := "MatchesJsonPath"
-    EqualToXml := "EqualToXml"
+    EqualToXml := "<thing>Hello</thing>"
     MatchesXPath := "MatchesXPath"
 
 	filter := Filter {
@@ -87,7 +87,9 @@ func TestParseRules(t *testing.T) {
 	    Or: []Filter{Filter { Contains: &Contains }},
 	}
 
-	rulesAnd, rulesOr, err := parseRules(&filter)
+	rules, err := parseRules(&filter)
+	rulesAnd := rules.rulesAnd
+	rulesOr := rules.rulesOr
 	rule := ContainsRule{Contains, CaseInsensitive}
 	if err != nil {
         t.Fatalf(`Error parsing rules: %s`, err)

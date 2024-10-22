@@ -3,6 +3,10 @@ package wiregock
 import (
     "time"
     "regexp"
+    "strings"
+    "mime/multipart"
+	"github.com/antchfx/jsonquery"
+	"github.com/antchfx/xmlquery"
 )
 
 type DataContext struct {
@@ -10,7 +14,9 @@ type DataContext struct {
 	Get func(key string) string
 	Params func(key string) string
 	Cookies func(key string) string
+	MultipartForm func() multipart.Form
 }
+
 
 func ParseCondition(request *MockRequest, context *DataContext) (Condition, error) {
 	conditions := []Condition{}
@@ -57,21 +63,21 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 }
 
 func createCondition(filter Filter, loaderMethod func() string) (DataCondition, error) {
-	rulesAnd, rulesOr, err := parseRules(&filter)
-	return DataCondition{loaderMethod, rulesAnd, rulesOr}, err
+	rules, err := parseRules(&filter)
+	return DataCondition{loaderMethod, rules}, err
 }
 
-func parseRules(filter *Filter) ([]Rule, []Rule, error) {
+func parseRules(filter *Filter) (*BlockRule, error) {
     rulesAnd, err := parseRule(filter)
     if err != nil {
-    	return nil, nil, err
+    	return nil, err
     }
     rulesOr := []Rule{}
     if len(filter.And) > 0 {
     	for _, filterAnd := range filter.And {
     		parsedRules, err := parseRule(&filterAnd)
     		if err != nil {
-    			return nil, nil, err
+    			return nil, err
     		}
     		rulesAnd = append(rulesAnd, parsedRules...)
     	}
@@ -80,12 +86,12 @@ func parseRules(filter *Filter) ([]Rule, []Rule, error) {
     	for _, filterOr := range filter.Or {
     		parsedRules, err := parseRule(&filterOr)
     		if err != nil {
-    			return nil, nil, err
+    			return nil, err
     		}
     		rulesOr = append(rulesOr, parsedRules...)
     	}
     }
-    return rulesAnd, rulesOr, nil
+    return &BlockRule{rulesAnd, rulesOr}, nil
 }
 
 func parseRule(filter *Filter) ([]Rule, error) {
@@ -146,5 +152,61 @@ func parseRule(filter *Filter) ([]Rule, error) {
 	if filter.Before != nil || filter.After != nil || filter.EqualToDateTime != nil {
 		rules = append(rules, DateTimeRule{filter.Before, filter.After, filter.EqualToDateTime, actualFormat})
 	}
+
+	if filter.EqualToJson != nil {
+		node, err := jsonquery.Parse(strings.NewReader(*filter.EqualToJson))
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, EqualToJsonRule{node})
+	}
+
+	if filter.EqualToXml != nil {
+		node, err := xmlquery.Parse(strings.NewReader(*filter.EqualToXml))
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, EqualToXmlRule{node})
+	}
+
+	if filter.MatchesJsonPath != nil {
+		xPath, err := generateXPath(filter.MatchesJsonPath.Expression, filter.MatchesJsonPath.XPathNamespaces)
+		if err != nil {
+			return nil, err
+		}
+		rule := MatchesJsonXPathRule{xPath: xPath}
+		if filter.MatchesJsonPath.Contains != nil {
+			rule.contains = filter.MatchesJsonPath.Contains
+		}
+		if filter.MatchesJsonPath.EqualToJson != nil {
+			node, err := jsonquery.Parse(strings.NewReader(*filter.MatchesJsonPath.EqualToXml))
+			if err != nil {
+				return nil, err
+			}
+			rule.node = node
+		}
+		rules = append(rules, rule)
+	}
+
+	if filter.MatchesXPath != nil {
+		xPath, err := generateXPath(filter.MatchesXPath.Expression, filter.MatchesXPath.XPathNamespaces)
+		if err != nil {
+			return nil, err
+		}
+		rule := MatchesXmlXPathRule{xPath: xPath}
+		if filter.MatchesXPath.Contains != nil {
+			rule.contains = filter.MatchesXPath.Contains
+		}
+		if filter.MatchesXPath.EqualToXml != nil {
+			node, err := xmlquery.Parse(strings.NewReader(*filter.MatchesXPath.EqualToXml))
+			if err != nil {
+				return nil, err
+			}
+			rule.node = node
+		}
+
+		rules = append(rules, rule)
+	}
+
 	return rules, nil
 }

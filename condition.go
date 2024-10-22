@@ -3,6 +3,7 @@ package wiregock
 import (
     "time"
     "encoding/json"
+    "mime/multipart"
     "go.mongodb.org/mongo-driver/bson"
 )
 
@@ -45,6 +46,11 @@ type MockRequest struct {
     QueryParameters      map[string]Filter `json:"queryParameters,omitempty" bson:"queryParameters,omitempty"`
     Cookies              map[string]Filter `json:"cookies,omitempty" bson:"cookies,omitempty"`
     BodyPatterns         []Filter          `json:"bodyPatterns,omitempty" bson:"bodyPatterns,omitempty"`
+    MultipartPatterns    []struct {         
+        MatchingType     *string           `json:"matchingType,omitempty" bson:"matchingType,omitempty"`
+        Headers          map[string]Filter `json:"headers,omitempty" bson:"headers,omitempty"`
+        BodyPatterns     []Filter          `json:"bodyPatterns,omitempty" bson:"bodyPatterns,omitempty"`
+    } `json:"multipartPatterns,omitempty" bson:"multipartPatterns,omitempty"`
     BasicAuthCredentials *struct {
         Username *string `json:"username,omitempty" bson:"username,omitempty"`
         Password *string `json:"password,omitempty" bson:"password,omitempty"`
@@ -67,8 +73,15 @@ type Condition interface {
 
 type DataCondition struct {
     loaderMethod func() string
-    rulesAnd []Rule
-    rulesOr []Rule
+    blockRule Rule
+}
+
+type MultipartDataCondition struct {
+    checkAny bool
+    loaderMethod func() multipart.Form
+    rulesFileName Rule
+    rulesHeader Rule
+    rulesBody Rule
 }
 
 func (c DataCondition) Check() (bool, error) {
@@ -76,25 +89,7 @@ func (c DataCondition) Check() (bool, error) {
     if c.loaderMethod != nil {
         data = c.loaderMethod()
     }
-    for _, ruleAnd := range c.rulesAnd {
-        res, err := ruleAnd.check(data)
-        if err != nil {
-            return false, err
-        }
-        if !res {
-            return false, nil
-        }
-    }
-    for _, ruleOr := range c.rulesOr {
-        res, err := ruleOr.check(data)
-        if err != nil {
-            return false, err
-        }
-        if res {
-            return true, nil
-        }
-    }
-    return len(c.rulesAnd) > 0, nil
+    return c.blockRule.check(data)
 }
 
 type AndCondition struct {

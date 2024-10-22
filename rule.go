@@ -51,10 +51,14 @@ type RegExRule struct {
 
 type MatchesJsonXPathRule struct {
     xPath *xpath.Expr
+    node *jsonquery.Node
+    contains *string
 }
 
 type MatchesXmlXPathRule struct {
     xPath *xpath.Expr
+    node *xmlquery.Node
+    contains *string
 }
 
 type EqualToXmlRule struct {
@@ -72,6 +76,11 @@ type TrueRule struct {
 }
 
 type FalseRule struct {
+}
+
+type BlockRule struct {
+    rulesAnd []Rule
+    rulesOr []Rule
 }
 
 func (rule NotRule) check(str string) (bool, error) {
@@ -141,20 +150,20 @@ func (rule EqualToJsonRule) check(str string) (bool, error) {
 	return reflect.DeepEqual(&rule.node, node), nil
 }
 
-func (rule MatchesJsonXPathRule) check(str string) (bool, error) {
-	node, err := jsonquery.Parse(strings.NewReader(str))
-	if err != nil {
-		return false, err
-	}
-	return (jsonquery.QuerySelector(node, rule.xPath) != nil), nil
-}
-
 func (rule MatchesXmlXPathRule) check(str string) (bool, error) {
 	node, err := xmlquery.Parse(strings.NewReader(str))
 	if err != nil {
 		return false, err
 	}
 	return (xmlquery.QuerySelector(node, rule.xPath) != nil), nil
+}
+
+func (rule MatchesJsonXPathRule) check(str string) (bool, error) {
+	node, err := jsonquery.Parse(strings.NewReader(str))
+	if err != nil {
+		return false, err
+	}
+	return (jsonquery.QuerySelector(node, rule.xPath) != nil), nil
 }
 
 func (rule AbsentRule) check(str string) (bool, error) {
@@ -168,6 +177,33 @@ func (rule TrueRule) check(str string) (bool, error) {
 func (rule FalseRule) check(str string) (bool, error) {
 	return false, nil
 }
+
+func (rule BlockRule) check(str string) (bool, error) {
+	if rule.rulesAnd != nil {
+		for _, ruleAnd := range rule.rulesAnd {
+	        res, err := ruleAnd.check(str)
+	        if err != nil {
+	            return false, err
+	        }
+	        if !res {
+	            return false, nil
+	        }
+	    }
+	}
+	if rule.rulesOr != nil {
+	    for _, ruleOr := range rule.rulesOr {
+	        res, err := ruleOr.check(str)
+	        if err != nil {
+	            return false, err
+	        }
+	        if res {
+	            return true, nil
+	        }
+	    }
+	}
+	return rule.rulesAnd != nil && len(rule.rulesAnd) > 0, nil
+}
+
 
 func generateXPath(str string, namespaces map[string]string) (*xpath.Expr, error) {
 	if namespaces != nil {
