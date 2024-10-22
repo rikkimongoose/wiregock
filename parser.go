@@ -61,9 +61,11 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 	return AndCondition{conditions}, nil
 }
 
-/*func createCondition(multipartPatternsData *MultipartPatternsData, loaderMethod func() string) (*DataCondition, error) {
-	rules, err := parseRules(filter, true)
-	return &DataCondition{loaderMethod, rules}, err
+/*func createMultipartCondition(multipartPatternsData []MultipartPatternsData, loaderMethod func() multipart.Form) ([]MultipartDataCondition, error) {
+	//TODO - init multipart condition
+	//checkAny := multipartPatternsData.MatchingType == nil || strings.Compare(*multipartPatternsData.MatchingType, "ALL") == 0
+	
+	//return &MultipartDataCondition{checkAny: checkAny, loaderMethod: loaderMethod}, nil
 }*/
 
 func createCondition(filter *Filter, loaderMethod func() string) (*DataCondition, error) {
@@ -201,6 +203,7 @@ func parseRule(filter *Filter) ([]Rule, error) {
 			return nil, err
 		}
 		rule := MatchesJsonXPathRule{xPath: xPath}
+		//TODO - inner rule
 		if filter.MatchesJsonPath.Contains != nil {
 			rule.contains = filter.MatchesJsonPath.Contains
 		}
@@ -220,6 +223,7 @@ func parseRule(filter *Filter) ([]Rule, error) {
 			return nil, err
 		}
 		rule := MatchesXmlXPathRule{xPath: xPath}
+		//TODO - inner rule
 		if filter.MatchesXPath.Contains != nil {
 			rule.contains = filter.MatchesXPath.Contains
 		}

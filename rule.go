@@ -143,6 +143,7 @@ func (rule EqualToXmlRule) check(str string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	//TODO - comparasion with ignoreArrayOrder, ignoreExtraElements
 	return reflect.DeepEqual(&rule.node, node), nil
 }
 
@@ -159,6 +160,17 @@ func (rule MatchesXmlXPathRule) check(str string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	if rule.contains != nil {
+		contains := *rule.contains
+		nodesByXPath := xmlquery.QuerySelectorAll(node, rule.xPath)
+		//TODO - move to inner rule
+		for _, node := range nodesByXPath {
+			if strings.Contains(node.Data, contains) {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
 	return (xmlquery.QuerySelector(node, rule.xPath) != nil), nil
 }
 
@@ -166,6 +178,17 @@ func (rule MatchesJsonXPathRule) check(str string) (bool, error) {
 	node, err := jsonquery.Parse(strings.NewReader(str))
 	if err != nil {
 		return false, err
+	}
+	if rule.contains != nil {
+		contains := *rule.contains
+		nodesByXPath := jsonquery.QuerySelectorAll(node, rule.xPath)
+		//TODO - move to inner rule
+		for _, node := range nodesByXPath {
+			if strings.Contains(node.Data, contains) {
+				return true, nil
+			}
+		}
+		return false, nil
 	}
 	return (jsonquery.QuerySelector(node, rule.xPath) != nil), nil
 }

@@ -109,3 +109,5 @@ func TestRegExRuleCheck(t *testing.T) {
         t.Fatalf(`RegExRule %s failed checking: %s`, regEx, value)
     }
 }
+
+//TODO - UnitTests for MatchesJsonXPathRule, MatchesXmlXPathRule, EqualToJsonRule, EqualToXmlRule

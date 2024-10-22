@@ -35,6 +35,11 @@ type XPathFilter struct {
     EqualToJson         *string           `json:"equalToJson,omitempty" bson:"equalToJson,omitempty"`
     EqualToXml          *string           `json:"equalToXml,omitempty" bson:"equalToXml,omitempty"`
     Contains            *string           `json:"contains,omitempty" bson:"contains,omitempty"`
+    And                 []Filter          `json:"and,omitempty" bson:"and,omitempty"`
+    Before              *time.Time        `json:"before,omitempty" bson:"before,omitempty"` // "2021-05-01T00:00:00Z"
+    After               *time.Time        `json:"after,omitempty" bson:"after,omitempty"` // "2021-05-01T00:00:00Z"
+    EqualToDateTime     *time.Time        `json:"equalToDateTime,omitempty" bson:"equalToDateTime,omitempty"`
+    ActualFormat        *string           `json:"actualFormat,omitempty" bson:"actualFormat,omitempty"`
     XPathNamespaces     map[string]string `json:"xPathNamespaces,omitempty" bson:"xPathNamespaces,omitempty"`
 }
 
@@ -55,6 +60,7 @@ type MockRequest struct {
 
 type MultipartPatternsData struct {
     MatchingType     *string           `json:"matchingType,omitempty" bson:"matchingType,omitempty"`
+    FileName         []Filter          `json:"fileName,omitempty" bson:"fileName,omitempty"`
     Headers          map[string]Filter `json:"headers,omitempty" bson:"headers,omitempty"`
     BodyPatterns     []Filter          `json:"bodyPatterns,omitempty" bson:"bodyPatterns,omitempty"`
 }
@@ -81,9 +87,9 @@ type DataCondition struct {
 type MultipartDataCondition struct {
     checkAny bool
     loaderMethod func() multipart.Form
-    rulesFileName Rule
-    rulesHeader Rule
-    rulesBody Rule
+    rulesFileName *Rule
+    rulesHeader map[string]Rule
+    rulesBody *Rule
 }
 
 func (c DataCondition) Check() (bool, error) {
