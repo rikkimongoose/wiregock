@@ -51,14 +51,12 @@ type RegExRule struct {
 
 type MatchesJsonXPathRule struct {
     xPath *xpath.Expr
-    node *jsonquery.Node
-    contains *string
+    innerRule Rule
 }
 
 type MatchesXmlXPathRule struct {
     xPath *xpath.Expr
-    node *xmlquery.Node
-    contains *string
+    innerRule Rule
 }
 
 type EqualToXmlRule struct {
@@ -160,12 +158,14 @@ func (rule MatchesXmlXPathRule) check(str string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if rule.contains != nil {
-		contains := *rule.contains
+	if rule.innerRule != nil {
 		nodesByXPath := xmlquery.QuerySelectorAll(node, rule.xPath)
-		//TODO - move to inner rule
 		for _, node := range nodesByXPath {
-			if strings.Contains(node.Data, contains) {
+			ok, err := rule.innerRule.check(node.Data)
+			if err != nil {
+				return false, err
+			}
+			if ok {
 				return true, nil
 			}
 		}
@@ -179,12 +179,14 @@ func (rule MatchesJsonXPathRule) check(str string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if rule.contains != nil {
-		contains := *rule.contains
+	if rule.innerRule != nil {
 		nodesByXPath := jsonquery.QuerySelectorAll(node, rule.xPath)
-		//TODO - move to inner rule
 		for _, node := range nodesByXPath {
-			if strings.Contains(node.Data, contains) {
+			ok, err := rule.innerRule.check(node.Data)
+			if err != nil {
+				return false, err
+			}
+			if ok {
 				return true, nil
 			}
 		}

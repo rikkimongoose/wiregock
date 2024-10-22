@@ -7,6 +7,7 @@ import (
     "mime/multipart"
 	"github.com/antchfx/jsonquery"
 	"github.com/antchfx/xmlquery"
+	"github.com/antchfx/xpath"
 )
 
 type DataContext struct {
@@ -157,6 +158,7 @@ func parseRule(filter *Filter) ([]Rule, error) {
 			rules = append(rules, AbsentRule{})
 		}
 	}
+
 	actualFormat := time.RFC3339
 	if filter.ActualFormat != nil {
 		actualFormat = *filter.ActualFormat
@@ -178,7 +180,7 @@ func parseRule(filter *Filter) ([]Rule, error) {
     	if filter.IgnoreExtraElements != nil {
     		ignoreExtraElements = *filter.IgnoreExtraElements
     	}
-    	rules = append(rules, EqualToJsonRule{node, ignoreArrayOrder, ignoreExtraElements})
+    	rules = append(rules, EqualToJsonRule{node: node, ignoreArrayOrder: ignoreArrayOrder, ignoreExtraElements: ignoreExtraElements})
 	}
 
 	if filter.EqualToXml != nil {
@@ -194,7 +196,7 @@ func parseRule(filter *Filter) ([]Rule, error) {
     	if filter.IgnoreExtraElements != nil {
     		ignoreExtraElements = *filter.IgnoreExtraElements
     	}
-		rules = append(rules, EqualToXmlRule{node, ignoreArrayOrder, ignoreExtraElements})
+		rules = append(rules, EqualToXmlRule{node: node, ignoreArrayOrder: ignoreArrayOrder, ignoreExtraElements: ignoreExtraElements})
 	}
 
 	if filter.MatchesJsonPath != nil {
@@ -202,18 +204,18 @@ func parseRule(filter *Filter) ([]Rule, error) {
 		if err != nil {
 			return nil, err
 		}
-		rule := MatchesJsonXPathRule{xPath: xPath}
-		//TODO - inner rule
+		caseInsensitiveLocal := false
+		if filter.MatchesJsonPath.CaseInsensitive != nil {
+			caseInsensitiveLocal = *filter.MatchesJsonPath.CaseInsensitive
+		}
+		xPathRules := []Rule{}
+		if filter.MatchesJsonPath.EqualTo != nil {
+			xPathRules = append(xPathRules, EqualToRule{*filter.MatchesJsonPath.EqualTo, caseInsensitiveLocal})
+		}
 		if filter.MatchesJsonPath.Contains != nil {
-			rule.contains = filter.MatchesJsonPath.Contains
+			xPathRules = append(xPathRules, ContainsRule{*filter.MatchesJsonPath.Contains, caseInsensitiveLocal})
 		}
-		if filter.MatchesJsonPath.EqualToJson != nil {
-			node, err := jsonquery.Parse(strings.NewReader(*filter.MatchesJsonPath.EqualToXml))
-			if err != nil {
-				return nil, err
-			}
-			rule.node = node
-		}
+		rule := MatchesJsonXPathRule{xPath: xPath, innerRule: BlockRule{rulesOr: xPathRules}}
 		rules = append(rules, rule)
 	}
 
@@ -222,20 +224,59 @@ func parseRule(filter *Filter) ([]Rule, error) {
 		if err != nil {
 			return nil, err
 		}
-		rule := MatchesXmlXPathRule{xPath: xPath}
-		//TODO - inner rule
+		caseInsensitiveLocal := false
+		if filter.MatchesXPath.CaseInsensitive != nil {
+			caseInsensitiveLocal = *filter.MatchesXPath.CaseInsensitive
+		}
+		xPathRules := []Rule{}
+		if filter.MatchesXPath.EqualTo != nil {
+			xPathRules = append(xPathRules, EqualToRule{*filter.MatchesXPath.EqualTo, caseInsensitiveLocal})
+		}
 		if filter.MatchesXPath.Contains != nil {
-			rule.contains = filter.MatchesXPath.Contains
+			xPathRules = append(xPathRules, ContainsRule{*filter.MatchesXPath.Contains, caseInsensitiveLocal})
 		}
-		if filter.MatchesXPath.EqualToXml != nil {
-			node, err := xmlquery.Parse(strings.NewReader(*filter.MatchesXPath.EqualToXml))
-			if err != nil {
-				return nil, err
-			}
-			rule.node = node
-		}
+		rule := MatchesXmlXPathRule{xPath: xPath, innerRule: BlockRule{rulesOr: xPathRules}}
 		rules = append(rules, rule)
 	}
 
 	return rules, nil
 }
+
+func generateMatchesXPathRule(filterPath *XPathFilter, xPathRuleFunc func(xPath *xpath.Expr, innerRule BlockRule) Rule) (Rule, error) {
+	xPath, err := generateXPath(filterPath.Expression, filterPath.XPathNamespaces)
+	if err != nil {
+		return nil, err
+	}
+	caseInsensitiveLocal := false
+	if filterPath.CaseInsensitive != nil {
+		caseInsensitiveLocal = *filterPath.CaseInsensitive
+	}
+	xPathRules := []Rule{}
+	if filterPath.EqualTo != nil {
+		xPathRules = append(xPathRules, EqualToRule{*filterPath.EqualTo, caseInsensitiveLocal})
+	}
+	if filterPath.Contains != nil {
+		xPathRules = append(xPathRules, ContainsRule{*filterPath.Contains, caseInsensitiveLocal})
+	}
+	rule := xPathRuleFunc(xPath, BlockRule{rulesOr: xPathRules})
+	return rule, nil
+}
+
+/*"io"
+
+func generateEqual(xmlQueryParseFunc func(r io.Reader) (*xmlquery.Node, error) ) {
+	node, err := xmlquery.Parse(strings.NewReader(*filter.EqualToXml))
+	if err != nil {
+		return nil, err
+	}
+	ignoreArrayOrder := true
+	ignoreExtraElements := true
+	if filter.IgnoreArrayOrder != nil {
+		ignoreArrayOrder = *filter.IgnoreArrayOrder
+	}
+	if filter.IgnoreExtraElements != nil {
+		ignoreExtraElements = *filter.IgnoreExtraElements
+	}
+	rules = append(rules, EqualToXmlRule{node: node, ignoreArrayOrder: ignoreArrayOrder, ignoreExtraElements: ignoreExtraElements})
+
+}*/

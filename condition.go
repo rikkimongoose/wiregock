@@ -32,9 +32,11 @@ type Filter struct {
 
 type XPathFilter struct {
     Expression          string            `json:"-" bson:"-"`
+    EqualTo             *string           `json:"equalTo,omitempty" bson:"equalTo,omitempty"`
     EqualToJson         *string           `json:"equalToJson,omitempty" bson:"equalToJson,omitempty"`
     EqualToXml          *string           `json:"equalToXml,omitempty" bson:"equalToXml,omitempty"`
     Contains            *string           `json:"contains,omitempty" bson:"contains,omitempty"`
+    CaseInsensitive     *bool             `json:"caseInsensitive,omitempty" bson:"caseInsensitive,omitempty"`
     And                 []Filter          `json:"and,omitempty" bson:"and,omitempty"`
     Before              *time.Time        `json:"before,omitempty" bson:"before,omitempty"` // "2021-05-01T00:00:00Z"
     After               *time.Time        `json:"after,omitempty" bson:"after,omitempty"` // "2021-05-01T00:00:00Z"
