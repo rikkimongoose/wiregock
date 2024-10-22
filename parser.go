@@ -63,16 +63,22 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 }
 
 func createCondition(filter Filter, loaderMethod func() string) (DataCondition, error) {
-	rules, err := parseRules(&filter)
+	rules, err := parseRules(&filter, true)
 	return DataCondition{loaderMethod, rules}, err
 }
 
-func parseRules(filter *Filter) (*BlockRule, error) {
-    rulesAnd, err := parseRule(filter)
+func parseRules(filter *Filter, defaultAnd bool) (*BlockRule, error) {
+    rules, err := parseRule(filter)
     if err != nil {
     	return nil, err
     }
+    rulesAnd := []Rule{}
     rulesOr := []Rule{}
+    if defaultAnd {
+    	rulesAnd = append(rulesAnd, rules...)
+    } else {
+		rulesOr = append(rulesOr, rules...)
+    }
     if len(filter.And) > 0 {
     	for _, filterAnd := range filter.And {
     		parsedRules, err := parseRule(&filterAnd)
@@ -204,7 +210,6 @@ func parseRule(filter *Filter) ([]Rule, error) {
 			}
 			rule.node = node
 		}
-
 		rules = append(rules, rule)
 	}
 

@@ -87,7 +87,7 @@ func TestParseRules(t *testing.T) {
 	    Or: []Filter{Filter { Contains: &Contains }},
 	}
 
-	rules, err := parseRules(&filter)
+	rules, err := parseRules(&filter, true)
 	rulesAnd := rules.rulesAnd
 	rulesOr := rules.rulesOr
 	rule := ContainsRule{Contains, CaseInsensitive}
