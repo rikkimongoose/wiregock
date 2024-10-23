@@ -230,7 +230,7 @@ func (rule BlockRule) check(str string) (bool, error) {
 	        }
 	    }
 	}
-	return rule.rulesAnd != nil && len(rule.rulesAnd) > 0, nil
+	return rule.rulesAnd == nil || rule.rulesOr == nil || len(rule.rulesOr) == 0, nil
 }
 
 

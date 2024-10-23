@@ -70,10 +70,12 @@ type MultipartPatternsData struct {
 type MockData struct {
     Request *MockRequest  `json:"request" bson:"request"`
     Response *struct {
-        Status  *int               `json:"status,omitempty" bson:"status,omitempty"`
-        Body    *string            `json:"body,omitempty" bson:"body,omitempty"`
-        Headers map[string]string  `json:"headers,omitempty" bson:"headers,omitempty"`
-        Cookies map[string]string  `json:"cookies,omitempty" bson:"cookies,omitempty"`
+        Status          *int               `json:"status,omitempty" bson:"status,omitempty"`
+        Body            *string            `json:"body,omitempty" bson:"body,omitempty"`
+        BodyFileName    *string            `json:"bodyFileName,omitempty" bson:"bodyFileName,omitempty"`
+        JsonBody        *interface{}       `json:"jsonBody,omitempty" bson:"jsonBody,omitempty"`
+        Headers         map[string]string  `json:"headers,omitempty" bson:"headers,omitempty"`
+        Cookies         map[string]string  `json:"cookies,omitempty" bson:"cookies,omitempty"`
     } `json:"response" bson:"response"`
 }
 
