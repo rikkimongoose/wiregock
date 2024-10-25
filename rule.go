@@ -50,12 +50,12 @@ type RegExRule struct {
 }
 
 type MatchesJsonXPathRule struct {
-    xPath *xpath.Expr
+	xPath *xpath.Expr
     innerRule Rule
 }
 
 type MatchesXmlXPathRule struct {
-    xPath *xpath.Expr
+	xPath *xpath.Expr
     innerRule Rule
 }
 
