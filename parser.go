@@ -14,6 +14,7 @@ type DataContext struct {
 	Get func(key string) string
 	Params func(key string) string
 	Cookies func(key string) string
+	FormValue func(key string) string
 	MultipartForm func() multipart.Form
 }
 
@@ -42,6 +43,16 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 	if request.Cookies != nil {
 		for key, value := range request.Cookies {
 			newCondition, err := createCondition(&value, func() string { return context.Cookies(key) })
+			if err != nil {
+				return nil, err
+			}
+			conditions = append(conditions, *newCondition)
+		}
+	}
+
+	if request.FormParameters != 0 {
+		for key, value := range request.FormParameters {
+			newCondition, err := createCondition(&value, func() string { return context.FormValue(key) })
 			if err != nil {
 				return nil, err
 			}
