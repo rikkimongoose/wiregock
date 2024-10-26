@@ -73,7 +73,6 @@ func TestDateTimeRuleCheck(t *testing.T) {
     }
 }
 
-
 func TestAbsentRuleCheck(t *testing.T) {
 	absentRule := AbsentRule{}
 	res, err := absentRule.check("test")

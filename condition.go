@@ -39,7 +39,9 @@ type XPathFilter struct {
     EqualToXml          *string           `json:"equalToXml,omitempty" bson:"equalToXml,omitempty"`
     Contains            *string           `json:"contains,omitempty" bson:"contains,omitempty"`
     CaseInsensitive     *bool             `json:"caseInsensitive,omitempty" bson:"caseInsensitive,omitempty"`
-    And                 []Filter          `json:"and,omitempty" bson:"and,omitempty"`
+    IgnoreArrayOrder    *bool             `json:"ignoreArrayOrder,omitempty" bson:"ignoreArrayOrder,omitempty"`
+    IgnoreExtraElements *bool             `json:"ignoreExtraElements,omitempty" bson:"ignoreExtraElements,omitempty"`
+    And                 []XPathFilter     `json:"and,omitempty" bson:"and,omitempty"`
     Before              *time.Time        `json:"before,omitempty" bson:"before,omitempty"` // "2021-05-01T00:00:00Z"
     After               *time.Time        `json:"after,omitempty" bson:"after,omitempty"` // "2021-05-01T00:00:00Z"
     EqualToDateTime     *time.Time        `json:"equalToDateTime,omitempty" bson:"equalToDateTime,omitempty"`

@@ -49,26 +49,31 @@ type RegExRule struct {
     regex *regexp.Regexp
 }
 
-type MatchesJsonXPathRule struct {
+type MatchesBaseXPathRule struct {
 	xPath *xpath.Expr
     innerRule Rule
+}
+
+type MatchesJsonXPathRule struct {
+	MatchesBaseXPathRule
 }
 
 type MatchesXmlXPathRule struct {
-	xPath *xpath.Expr
-    innerRule Rule
+	MatchesBaseXPathRule
 }
 
+type EqualToBaseRule struct {
+    IgnoreArrayOrder bool
+    IgnoreExtraElements bool
+}
 type EqualToXmlRule struct {
     node *xmlquery.Node
-    ignoreArrayOrder bool
-    ignoreExtraElements bool
+    EqualToBaseRule
 }
 
 type EqualToJsonRule struct {
     node *jsonquery.Node
-    ignoreArrayOrder bool
-    ignoreExtraElements bool
+    EqualToBaseRule
 }
 
 type AbsentRule struct {
