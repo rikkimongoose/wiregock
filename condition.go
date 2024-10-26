@@ -3,7 +3,6 @@ package wiregock
 import (
     "time"
     "encoding/json"
-    "mime/multipart"
     "go.mongodb.org/mongo-driver/bson"
 )
 
@@ -53,7 +52,7 @@ type MultiFilter struct {
     EqualTo             *string           `json:"equalTo,omitempty" bson:"equalTo,omitempty"`
     Contains            *string           `json:"contains,omitempty" bson:"contains,omitempty"`
     DoesNotContain      *string           `json:"doesNotContain,omitempty" bson:"doesNotContain,omitempty"`
-    CaseInsensitive     *bool         `json:"caseInsensitive,omitempty" bson:"caseInsensitive,omitempty"` 
+    CaseInsensitive     *bool             `json:"caseInsensitive,omitempty" bson:"caseInsensitive,omitempty"` 
 }
 
 type MockRequest struct {
@@ -74,7 +73,7 @@ type MockRequest struct {
 
 type MultipartPatternsData struct {
     MatchingType     *string           `json:"matchingType,omitempty" bson:"matchingType,omitempty"`
-    FileName         []Filter          `json:"fileName,omitempty" bson:"fileName,omitempty"`
+    FileName         *Filter          `json:"fileName,omitempty" bson:"fileName,omitempty"`
     Headers          map[string]Filter `json:"headers,omitempty" bson:"headers,omitempty"`
     BodyPatterns     []Filter          `json:"bodyPatterns,omitempty" bson:"bodyPatterns,omitempty"`
 }
@@ -106,12 +105,12 @@ type MultiDataCondition struct {
     rulesOr []Rule
 }
 
-type MultipartDataCondition struct {
+type FileDataCondition struct {
     checkAny bool
-    loaderMethod func() multipart.Form
-    rulesFileName *Rule
+    loaderMethod func() []FileFormData
     rulesHeader map[string]Rule
-    rulesBody *Rule
+    rulesFileName Rule
+    rulesBody Rule
 }
 
 func (c DataCondition) Check() (bool, error) {
@@ -121,7 +120,6 @@ func (c DataCondition) Check() (bool, error) {
     }
     return c.blockRule.check(data)
 }
-
 
 func (c MultiDataCondition) Check() (bool, error) {
     datas := []string{}
@@ -153,6 +151,50 @@ func (c MultiDataCondition) Check() (bool, error) {
         }
     }
     return hasRulesAnd, nil 
+}
+
+func (c FileDataCondition) Check() (bool, error) {
+    hasRules := c.rulesBody != nil || len(c.rulesHeader) > 0
+    if c.loaderMethod == nil {
+        return hasRules, nil
+    }
+    for _, formData := range c.loaderMethod() {
+        for ruleKey, rule := range c.rulesHeader {
+            headers, ok := formData.Headers[ruleKey]
+            if !ok && c.checkAny {
+                continue
+            }
+            for _, header := range headers {
+                val, err := rule.check(header)
+                if err != nil {
+                    return false, err
+                }
+                if (val == c.checkAny) {
+                    return val, nil
+                }
+            }
+        }
+        if c.rulesBody != nil {
+            val, err := c.rulesBody.check(formData.Data)
+            if err != nil {
+                return false, err
+            }
+            if (val == c.checkAny) {
+                return val, nil
+            }
+        }
+
+        if c.rulesFileName != nil {
+            val, err := c.rulesFileName.check(formData.FileName)
+            if err != nil {
+                return false, err
+            }
+            if (val == c.checkAny) {
+                return val, nil
+            }
+        }
+    }
+    return hasRules, nil
 }
 
 type AndCondition struct {

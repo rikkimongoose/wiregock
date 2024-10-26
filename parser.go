@@ -8,9 +8,10 @@ import (
 	"github.com/antchfx/xmlquery"
 )
 
-type MultipartFormData struct {
-	Headers map[string]string
-	Data []byte
+type FileFormData struct {
+	FileName string
+	Headers map[string][]string
+	Data string
 }
 
 type DataContext struct {
@@ -21,7 +22,7 @@ type DataContext struct {
 	ParamsMulti func(key string) []string
 	Cookies func(key string) string
 	FormValue func(key string) string
-	MultipartForm func() func (yield func(MultipartFormData) bool)
+	MultipartForm func() []FileFormData
 }
 
 func isMulti(filter *Filter) bool {
@@ -84,6 +85,16 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 		}
 	}
 
+	if len(request.MultipartPatterns) > 0 {
+		for _, value := range request.MultipartPatterns {
+			newCondition, err := createMultipartFileCondition(&value, func() []FileFormData { return context.MultipartForm() })
+			if err != nil {
+				return nil, err
+			}
+			conditions = append(conditions, *newCondition)
+		}
+	}
+
 	if len(request.BodyPatterns) > 0 {
 		for _, value := range request.BodyPatterns {
 			newCondition, err := createCondition(&value, func() string { return context.Body() })
@@ -93,6 +104,7 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 			conditions = append(conditions, *newCondition)
 		}
 	}
+
 	return AndCondition{conditions}, nil
 }
 
@@ -115,6 +127,54 @@ func createConditionMulti(filter *Filter, loaderMethod func() []string) (*MultiD
 		return nil, err
 	}
 	return &MultiDataCondition{loaderMethod, parsedRules.rulesAnd, parsedRules.rulesOr}, err
+}
+
+func createMultipartFileCondition(multipartPatternsData *MultipartPatternsData, loaderMethod func() []FileFormData) (*FileDataCondition, error) {
+	checkAny := false
+	if multipartPatternsData.MatchingType != nil {
+		checkAny = strings.Compare(*multipartPatternsData.MatchingType, "ALL") == 0
+	}
+	var ruleBody BlockRule
+	if multipartPatternsData.BodyPatterns != nil {
+		bodyPatternRules := []Rule{}
+		for _, bodyPatterns := range multipartPatternsData.BodyPatterns {
+			ruleBodyItem, err := parseRules(&bodyPatterns, checkAny)
+			if err != nil {
+				return nil, err
+			}
+			bodyPatternRules = append(bodyPatternRules, ruleBodyItem)
+		}
+		if checkAny {
+			ruleBody = BlockRule{rulesAnd: []Rule{}, rulesOr: bodyPatternRules}
+		} else {
+			ruleBody = BlockRule{rulesAnd: bodyPatternRules, rulesOr: []Rule{}}
+		}
+	}
+    var rulesFileName Rule
+	if multipartPatternsData.FileName != nil {
+		rulesFileNameInfo, err := parseRules(multipartPatternsData.FileName, checkAny)
+		if err != nil {
+			return nil, err
+		}
+		rulesFileName = rulesFileNameInfo
+	}
+	var rulesHeader map[string]Rule
+	if multipartPatternsData.Headers != nil {
+		for key, header := range multipartPatternsData.Headers {
+			val, err := parseRules(&header, checkAny)
+			if err != nil {
+				return nil, err
+			}
+			rulesHeader[key] = val
+		}
+	}
+	return &FileDataCondition {
+	    checkAny: checkAny,
+	    loaderMethod: loaderMethod,
+	    rulesHeader: rulesHeader,
+	    rulesFileName: rulesFileName,
+	    rulesBody: ruleBody,
+	}, nil
 }
 
 type XPathFilterProps struct {
