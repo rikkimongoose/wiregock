@@ -99,6 +99,12 @@ type DataCondition struct {
     blockRule Rule
 }
 
+type DataConditionMulti struct {
+    loaderMethod func() []string
+    rulesAnd []Rule
+    rulesOr []Rule
+}
+
 type MultipartDataCondition struct {
     checkAny bool
     loaderMethod func() multipart.Form
