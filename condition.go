@@ -52,7 +52,8 @@ type XPathFilter struct {
 type MultiFilter struct {
     EqualTo             *string           `json:"equalTo,omitempty" bson:"equalTo,omitempty"`
     Contains            *string           `json:"contains,omitempty" bson:"contains,omitempty"`
-    DoesNotContain      *string           `json:"doesNotContain,omitempty" bson:"doesNotContain,omitempty"`    
+    DoesNotContain      *string           `json:"doesNotContain,omitempty" bson:"doesNotContain,omitempty"`
+    CaseInsensitive     *bool         `json:"caseInsensitive,omitempty" bson:"caseInsensitive,omitempty"` 
 }
 
 type MockRequest struct {
@@ -99,7 +100,7 @@ type DataCondition struct {
     blockRule Rule
 }
 
-type DataConditionMulti struct {
+type MultiDataCondition struct {
     loaderMethod func() []string
     rulesAnd []Rule
     rulesOr []Rule
@@ -119,6 +120,39 @@ func (c DataCondition) Check() (bool, error) {
         data = c.loaderMethod()
     }
     return c.blockRule.check(data)
+}
+
+
+func (c MultiDataCondition) Check() (bool, error) {
+    datas := []string{}
+    hasRulesAnd := len(c.rulesAnd) > 0 
+    if c.loaderMethod == nil {
+        return hasRulesAnd, nil
+    }
+    datas = c.loaderMethod()
+    for _, data := range datas {
+        for _, ruleAnd := range c.rulesAnd {
+            val, err := ruleAnd.check(data)
+            if err != nil {
+                return false, err
+            }
+            if !val {
+                return false, nil
+            }
+        }
+    }
+    for _, data := range datas {
+        for _, ruleOr := range c.rulesOr {
+            val, err := ruleOr.check(data)
+            if err != nil {
+                return false, err
+            }
+            if val {
+                return true, nil
+            }
+        }
+    }
+    return hasRulesAnd, nil 
 }
 
 type AndCondition struct {

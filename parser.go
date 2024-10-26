@@ -24,6 +24,10 @@ type DataContext struct {
 	MultipartForm func() func (yield func(MultipartFormData) bool)
 }
 
+func isMulti(filter *Filter) bool {
+	return (filter.Includes != nil && len(filter.Includes) > 0) || (filter.HasExactly != nil && len(filter.HasExactly) > 0)
+}
+
 func ParseCondition(request *MockRequest, context *DataContext) (Condition, error) {
 	conditions := []Condition{}
 	if request.Headers != nil {
@@ -33,6 +37,13 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 				return nil, err
 			}
 			conditions = append(conditions, *newCondition)
+			if isMulti(&value) {
+				newConditionMulti, err := createConditionMulti(&value, func() []string { return context.GetMulti(key) })
+				if err != nil {
+					return nil, err
+				}
+				conditions = append(conditions, *newConditionMulti)
+			}
 		}
 	}
 
@@ -43,6 +54,13 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 				return nil, err
 			}
 			conditions = append(conditions, *newCondition)
+			if isMulti(&value) {
+				newConditionMulti, err := createConditionMulti(&value, func() []string { return context.ParamsMulti(key) })
+				if err != nil {
+					return nil, err
+				}
+				conditions = append(conditions, *newConditionMulti)
+			}
 		}
 	}
 
@@ -78,9 +96,25 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 	return AndCondition{conditions}, nil
 }
 
+type ParsedRules struct {
+	rulesAnd []Rule
+    rulesOr []Rule
+}
+
 func createCondition(filter *Filter, loaderMethod func() string) (*DataCondition, error) {
-	rules, err := parseRules(filter, true)
-	return &DataCondition{loaderMethod, rules}, err
+	parsedRules, err := parseRules(filter, true)
+	if err != nil {
+		return nil, err
+	}
+	return &DataCondition{loaderMethod, parsedRules}, err
+}
+
+func createConditionMulti(filter *Filter, loaderMethod func() []string) (*MultiDataCondition, error) {
+	parsedRules, err := parseRulesMulti(filter)
+	if err != nil {
+		return nil, err
+	}
+	return &MultiDataCondition{loaderMethod, parsedRules.rulesAnd, parsedRules.rulesOr}, err
 }
 
 type XPathFilterProps struct {
@@ -381,5 +415,52 @@ func parseRule(filter *Filter) ([]Rule, error) {
 		rules = append(rules, rule)
 	}
 
+	return rules, nil
+}
+
+func parseRulesMulti(filter *Filter) (*ParsedRules, error) {
+    rulesAnd := []Rule{}
+    rulesOr := []Rule{}
+    if len(filter.Includes) > 0 {
+    	for _, filterAnd := range filter.HasExactly {
+    		parsedRules, err := parseRuleMulti(&filterAnd)
+    		if err != nil {
+    			return nil, err
+    		}
+    		rulesAnd = append(rulesAnd, parsedRules...)
+    	}
+    }
+    if len(filter.HasExactly) > 0 {
+    	for _, filterOr := range filter.Includes {
+    		parsedRules, err := parseRuleMulti(&filterOr)
+    		if err != nil {
+    			return nil, err
+    		}
+    		rulesOr = append(rulesOr, parsedRules...)
+    	}
+    }
+    return &ParsedRules{rulesAnd, rulesOr}, nil
+}
+
+func parseRuleMulti(filter *MultiFilter) ([]Rule, error) {
+	rules := []Rule{}
+	caseInsensitive := false
+	if filter.CaseInsensitive != nil {
+		caseInsensitive = *filter.CaseInsensitive
+	}
+	if filter.Contains != nil {
+		val := *filter.Contains
+		rules = append(rules, ContainsRule{val, caseInsensitive})
+	}
+
+	if filter.EqualTo != nil {
+		val := *filter.EqualTo
+		rules = append(rules, EqualToRule{val, caseInsensitive})
+	}
+
+	if filter.DoesNotContain != nil {
+		val := *filter.DoesNotContain
+		rules = append(rules, NotRule{ContainsRule{val, caseInsensitive}})
+	}
 	return rules, nil
 }
