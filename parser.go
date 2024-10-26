@@ -50,7 +50,7 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 		}
 	}
 
-	if request.FormParameters != 0 {
+	if request.FormParameters != nil {
 		for key, value := range request.FormParameters {
 			newCondition, err := createCondition(&value, func() string { return context.FormValue(key) })
 			if err != nil {
