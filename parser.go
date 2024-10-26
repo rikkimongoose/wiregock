@@ -4,18 +4,24 @@ import (
     "time"
     "regexp"
     "strings"
-    "mime/multipart"
 	"github.com/antchfx/jsonquery"
 	"github.com/antchfx/xmlquery"
 )
 
+type MultipartFormData struct {
+	Headers map[string]string
+	Data []byte
+}
+
 type DataContext struct {
 	Body func() string
 	Get func(key string) string
+	GetMulti func(key string) []string
 	Params func(key string) string
+	ParamsMulti func(key string) []string
 	Cookies func(key string) string
 	FormValue func(key string) string
-	MultipartForm func() multipart.Form
+	MultipartForm func() func (yield func(MultipartFormData) bool)
 }
 
 func ParseCondition(request *MockRequest, context *DataContext) (Condition, error) {
@@ -71,13 +77,6 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 	}
 	return AndCondition{conditions}, nil
 }
-
-/*func createMultipartCondition(multipartPatternsData []MultipartPatternsData, loaderMethod func() multipart.Form) ([]MultipartDataCondition, error) {
-	//TODO - init multipart condition
-	//checkAny := multipartPatternsData.MatchingType == nil || strings.Compare(*multipartPatternsData.MatchingType, "ALL") == 0
-	
-	//return &MultipartDataCondition{checkAny: checkAny, loaderMethod: loaderMethod}, nil
-}*/
 
 func createCondition(filter *Filter, loaderMethod func() string) (*DataCondition, error) {
 	rules, err := parseRules(filter, true)
