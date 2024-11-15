@@ -123,11 +123,12 @@ func (c DataCondition) Check() (bool, error) {
 
 func (c MultiDataCondition) Check() (bool, error) {
     datas := []string{}
-    hasRulesAnd := len(c.rulesAnd) > 0 
     if c.loaderMethod == nil {
-        return hasRulesAnd, nil
+        datas = []string{""}
+    } else {
+        datas = c.loaderMethod()
     }
-    datas = c.loaderMethod()
+    
     for _, data := range datas {
         for _, ruleAnd := range c.rulesAnd {
             val, err := ruleAnd.check(data)
@@ -139,6 +140,7 @@ func (c MultiDataCondition) Check() (bool, error) {
             }
         }
     }
+    resultAnd := (c.rulesAnd == nil) || len(c.rulesAnd) > 0
     for _, data := range datas {
         for _, ruleOr := range c.rulesOr {
             val, err := ruleOr.check(data)
@@ -150,7 +152,8 @@ func (c MultiDataCondition) Check() (bool, error) {
             }
         }
     }
-    return hasRulesAnd, nil 
+    resultOr := (c.rulesOr == nil) || len(c.rulesOr) == 0
+    return resultAnd && resultOr, nil 
 }
 
 func (c FileDataCondition) Check() (bool, error) {

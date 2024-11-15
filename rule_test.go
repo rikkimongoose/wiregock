@@ -4,6 +4,9 @@ import (
 	"testing"
 	"regexp"
 	"time"
+	//"github.com/antchfx/jsonquery"
+	//"github.com/antchfx/xmlquery"
+	//"github.com/antchfx/xpath"
 )
 
 func TestEqualToRuleCheck(t *testing.T) {
@@ -109,4 +112,72 @@ func TestRegExRuleCheck(t *testing.T) {
     }
 }
 
+/*func TestMatchesJsonXPathRule(t *testing.T) {	
+	node := jsonquery.Node{}
+	ruleMatchesJsonXPath := MatchesJsonXPathRule{node:node}
+	res, err := ruleMatchesJsonXPath.check(value)
+	if err != nil || !res {
+        t.Fatalf(`MatchesJsonXPathRule %s failed checking: %s`, regEx, value)
+    }
+}
+
+func TestMatchesXmlXPathRule(t *testing.T) {
+	node := jsonquery.Node{}
+	ruleMatchesXmlXPath := MatchesXmlXPathRule{node:node}
+	res, err := ruleMatchesXmlXPath.check(value)
+	if err != nil || !res {
+        t.Fatalf(`MatchesXmlXPathRule %s failed checking: %s`, regEx, value)
+    }
+}
+
+func TestEqualToJsonRule(t *testing.T) {
+	value := ""
+	xPath := xpath.Expr{"//search-results"}
+	ruleEqualToJson := EqualToJsonRule{xPath: *xPath, innerRule:TrueRule{}}
+	res, err := ruleRegEx.check(value)
+	if err != nil || !res {
+        t.Fatalf(`EqualToJsonRule %s failed checking: %s`, regEx, value)
+    }
+}
+
+func TestEqualToXmlRule(t *testing.T) {
+	value := ""
+	xPath := xpath.Expr{"<search-results />"}
+	ruleEqualToJson := EqualToXmlRule{xPath: *xPath, innerRule:TrueRule{}}
+	res, err := ruleRegEx.check(value)
+	if err != nil || !res {
+        t.Fatalf(`EqualToXmlRule %s failed checking: %s`, regEx, value)
+    }
+}
+*/
+func TestBlockRule(t *testing.T) {
+	ruleAndTrueFalse := BlockRule{
+		rulesAnd: []Rule{TrueRule{}, FalseRule{}},
+	}
+	ok, _ := ruleAndTrueFalse.check("")
+    if ok {
+        t.Fatalf(`ruleAndTrueFalse failed checking`)
+    }
+	ruleAndTrueTrue := BlockRule{
+		rulesAnd: []Rule{TrueRule{}, TrueRule{}},
+	}
+	ok, _ = ruleAndTrueTrue.check("")
+    if !ok {
+        t.Fatalf(`ruleAndTrueTrue failed checking`)
+    }
+    ruleOrTrueFalse := BlockRule{
+		rulesOr: []Rule{TrueRule{}, FalseRule{}},
+	}
+	ok, _ = ruleOrTrueFalse.check("")
+    if !ok {
+        t.Fatalf(`ruleOrTrueFalse failed checking`)
+    }
+	ruleOrFalseFalse := BlockRule{
+		rulesOr: []Rule{FalseRule{}, FalseRule{}},
+	}
+	ok, _ = ruleOrFalseFalse.check("")
+    if ok {
+        t.Fatalf(`ruleOrFalseFalse failed checking`)
+    }
+}
 //TODO - UnitTests for MatchesJsonXPathRule, MatchesXmlXPathRule, EqualToJsonRule, EqualToXmlRule

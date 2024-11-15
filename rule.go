@@ -146,7 +146,6 @@ func (rule EqualToXmlRule) check(str string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	//TODO - comparasion with ignoreArrayOrder, ignoreExtraElements
 	return reflect.DeepEqual(&rule.node, node), nil
 }
 
@@ -224,6 +223,7 @@ func (rule BlockRule) check(str string) (bool, error) {
 	        }
 	    }
 	}
+	resultAnd := rule.rulesAnd == nil || len(rule.rulesAnd) > 0
 	if rule.rulesOr != nil {
 	    for _, ruleOr := range rule.rulesOr {
 	        res, err := ruleOr.check(str)
@@ -235,9 +235,9 @@ func (rule BlockRule) check(str string) (bool, error) {
 	        }
 	    }
 	}
-	return rule.rulesAnd == nil || rule.rulesOr == nil || len(rule.rulesOr) == 0, nil
+	resultOr := (rule.rulesOr == nil) || len(rule.rulesOr) == 0
+	return resultAnd && resultOr, nil
 }
-
 
 func generateXPath(str string, namespaces map[string]string) (*xpath.Expr, error) {
 	if namespaces != nil {
