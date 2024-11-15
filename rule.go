@@ -1,57 +1,58 @@
 package wiregock
 
 import (
-    "regexp"
-    "strings"
-    "bytes"
-    "reflect"
-    "time"
+	"bytes"
+	"reflect"
+	"regexp"
+	"strings"
+	"time"
+
+	"github.com/IGLOU-EU/go-wildcard/v2"
 	"github.com/antchfx/jsonquery"
 	"github.com/antchfx/xmlquery"
-	"github.com/IGLOU-EU/go-wildcard/v2"
 	"github.com/antchfx/xpath"
 )
 
 type Rule interface {
-    check(str string) (bool, error)
+	check(str string) (bool, error)
 }
 
 type NotRule struct {
-    base Rule
+	base Rule
 }
 
 type EqualToRule struct {
-    val string
-    caseInsensitive bool
+	val             string
+	caseInsensitive bool
 }
 
 type EqualToBinaryRule struct {
-    val []byte
+	val []byte
 }
 
 type DateTimeRule struct {
-    before          *time.Time
-    after           *time.Time
-    equalToDateTime *time.Time
-    timeFormat string //default: time.RFC3339
+	before          *time.Time
+	after           *time.Time
+	equalToDateTime *time.Time
+	timeFormat      string //default: time.RFC3339
 }
 
 type ContainsRule struct {
-    val string
-    caseInsensitive bool
+	val             string
+	caseInsensitive bool
 }
 
 type WildcardsRule struct {
-    val string
-    caseInsensitive bool
+	val             string
+	caseInsensitive bool
 }
 type RegExRule struct {
-    regex *regexp.Regexp
+	regex *regexp.Regexp
 }
 
 type MatchesBaseXPathRule struct {
-	xPath *xpath.Expr
-    innerRule Rule
+	xPath     *xpath.Expr
+	innerRule Rule
 }
 
 type MatchesJsonXPathRule struct {
@@ -63,17 +64,17 @@ type MatchesXmlXPathRule struct {
 }
 
 type EqualToBaseRule struct {
-    IgnoreArrayOrder bool
-    IgnoreExtraElements bool
+	IgnoreArrayOrder    bool
+	IgnoreExtraElements bool
 }
 type EqualToXmlRule struct {
-    node *xmlquery.Node
-    EqualToBaseRule
+	node *xmlquery.Node
+	EqualToBaseRule
 }
 
 type EqualToJsonRule struct {
-    node *jsonquery.Node
-    EqualToBaseRule
+	node *jsonquery.Node
+	EqualToBaseRule
 }
 
 type AbsentRule struct {
@@ -86,8 +87,8 @@ type FalseRule struct {
 }
 
 type BlockRule struct {
-    rulesAnd []Rule
-    rulesOr []Rule
+	rulesAnd []Rule
+	rulesOr  []Rule
 }
 
 func (rule NotRule) check(str string) (bool, error) {
@@ -103,7 +104,7 @@ func (rule EqualToRule) check(str string) (bool, error) {
 }
 
 func (rule EqualToBinaryRule) check(str string) (bool, error) {
-	return bytes.Compare(rule.val, []byte(str)) == 0, nil
+	return bytes.Equal(rule.val, []byte(str)), nil
 }
 
 func (rule DateTimeRule) check(str string) (bool, error) {
@@ -146,7 +147,7 @@ func (rule EqualToXmlRule) check(str string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return reflect.DeepEqual(&rule.node, node), nil
+	return reflect.DeepEqual(*rule.node, *node), nil
 }
 
 func (rule EqualToJsonRule) check(str string) (bool, error) {
@@ -154,7 +155,7 @@ func (rule EqualToJsonRule) check(str string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return reflect.DeepEqual(&rule.node, node), nil
+	return reflect.DeepEqual(*rule.node, *node), nil
 }
 
 func (rule MatchesXmlXPathRule) check(str string) (bool, error) {
@@ -214,26 +215,26 @@ func (rule FalseRule) check(str string) (bool, error) {
 func (rule BlockRule) check(str string) (bool, error) {
 	if rule.rulesAnd != nil {
 		for _, ruleAnd := range rule.rulesAnd {
-	        res, err := ruleAnd.check(str)
-	        if err != nil {
-	            return false, err
-	        }
-	        if !res {
-	            return false, nil
-	        }
-	    }
+			res, err := ruleAnd.check(str)
+			if err != nil {
+				return false, err
+			}
+			if !res {
+				return false, nil
+			}
+		}
 	}
 	resultAnd := rule.rulesAnd == nil || len(rule.rulesAnd) > 0
 	if rule.rulesOr != nil {
-	    for _, ruleOr := range rule.rulesOr {
-	        res, err := ruleOr.check(str)
-	        if err != nil {
-	            return false, err
-	        }
-	        if res {
-	            return true, nil
-	        }
-	    }
+		for _, ruleOr := range rule.rulesOr {
+			res, err := ruleOr.check(str)
+			if err != nil {
+				return false, err
+			}
+			if res {
+				return true, nil
+			}
+		}
 	}
 	resultOr := (rule.rulesOr == nil) || len(rule.rulesOr) == 0
 	return resultAnd && resultOr, nil

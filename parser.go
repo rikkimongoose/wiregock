@@ -1,32 +1,33 @@
 package wiregock
 
 import (
-    "time"
-    "regexp"
-    "strings"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/antchfx/jsonquery"
 	"github.com/antchfx/xmlquery"
 )
 
 type FileFormData struct {
 	FileName string
-	Headers map[string][]string
-	Data string
+	Headers  map[string][]string
+	Data     string
 }
 
 type DataContext struct {
-	Body func() string
-	Get func(key string) string
-	GetMulti func(key string) []string
-	Params func(key string) string
-	ParamsMulti func(key string) []string
-	Cookies func(key string) string
-	FormValue func(key string) string
+	Body          func() string
+	Get           func(key string) string
+	GetMulti      func(key string) []string
+	Params        func(key string) string
+	ParamsMulti   func(key string) []string
+	Cookies       func(key string) string
+	FormValue     func(key string) string
 	MultipartForm func() []FileFormData
 }
 
 func isMulti(filter *Filter) bool {
-	return (filter.Includes != nil && len(filter.Includes) > 0) || (filter.HasExactly != nil && len(filter.HasExactly) > 0)
+	return len(filter.Includes) > 0 || len(filter.HasExactly) > 0
 }
 
 func ParseCondition(request *MockRequest, context *DataContext) (Condition, error) {
@@ -110,7 +111,7 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 
 type ParsedRules struct {
 	rulesAnd []Rule
-    rulesOr []Rule
+	rulesOr  []Rule
 }
 
 func createCondition(filter *Filter, loaderMethod func() string) (*DataCondition, error) {
@@ -150,7 +151,7 @@ func createMultipartFileCondition(multipartPatternsData *MultipartPatternsData, 
 			ruleBody = BlockRule{rulesAnd: bodyPatternRules, rulesOr: []Rule{}}
 		}
 	}
-    var rulesFileName Rule
+	var rulesFileName Rule
 	if multipartPatternsData.FileName != nil {
 		rulesFileNameInfo, err := parseRules(multipartPatternsData.FileName, checkAny)
 		if err != nil {
@@ -158,7 +159,7 @@ func createMultipartFileCondition(multipartPatternsData *MultipartPatternsData, 
 		}
 		rulesFileName = rulesFileNameInfo
 	}
-	var rulesHeader map[string]Rule
+	rulesHeader := map[string]Rule{}
 	if multipartPatternsData.Headers != nil {
 		for key, header := range multipartPatternsData.Headers {
 			val, err := parseRules(&header, checkAny)
@@ -168,18 +169,18 @@ func createMultipartFileCondition(multipartPatternsData *MultipartPatternsData, 
 			rulesHeader[key] = val
 		}
 	}
-	return &FileDataCondition {
-	    checkAny: checkAny,
-	    loaderMethod: loaderMethod,
-	    rulesHeader: rulesHeader,
-	    rulesFileName: rulesFileName,
-	    rulesBody: ruleBody,
+	return &FileDataCondition{
+		checkAny:      checkAny,
+		loaderMethod:  loaderMethod,
+		rulesHeader:   rulesHeader,
+		rulesFileName: rulesFileName,
+		rulesBody:     ruleBody,
 	}, nil
 }
 
 type XPathFilterProps struct {
-	caseInsensitive bool
-	ignoreArrayOrder bool
+	caseInsensitive     bool
+	ignoreArrayOrder    bool
 	ignoreExtraElements bool
 }
 
@@ -189,18 +190,18 @@ func loadFilterProps(filter *Filter) XPathFilterProps {
 		caseInsensitive = *filter.CaseInsensitive
 	}
 	ignoreArrayOrder := true
-    if filter.IgnoreArrayOrder != nil {
-    	ignoreArrayOrder = *filter.IgnoreArrayOrder
-    }
-    ignoreExtraElements := true
-    if filter.IgnoreExtraElements != nil {
-    	ignoreExtraElements = *filter.IgnoreExtraElements
-    }
-    return XPathFilterProps{
-    	caseInsensitive,
+	if filter.IgnoreArrayOrder != nil {
+		ignoreArrayOrder = *filter.IgnoreArrayOrder
+	}
+	ignoreExtraElements := true
+	if filter.IgnoreExtraElements != nil {
+		ignoreExtraElements = *filter.IgnoreExtraElements
+	}
+	return XPathFilterProps{
+		caseInsensitive,
 		ignoreArrayOrder,
 		ignoreExtraElements,
-    }
+	}
 }
 
 func loadXPathFilterProps(filter *XPathFilter, xPathFilterPropsDefault *XPathFilterProps) XPathFilterProps {
@@ -215,21 +216,21 @@ func loadXPathFilterProps(filter *XPathFilter, xPathFilterPropsDefault *XPathFil
 	if xPathFilterPropsDefault != nil {
 		ignoreArrayOrder = xPathFilterPropsDefault.ignoreArrayOrder
 	}
-    if filter.IgnoreArrayOrder != nil {
-    	ignoreArrayOrder = *filter.IgnoreArrayOrder
-    }
-    ignoreExtraElements := true
+	if filter.IgnoreArrayOrder != nil {
+		ignoreArrayOrder = *filter.IgnoreArrayOrder
+	}
+	ignoreExtraElements := true
 	if xPathFilterPropsDefault != nil {
 		ignoreExtraElements = xPathFilterPropsDefault.ignoreExtraElements
 	}
-    if filter.IgnoreExtraElements != nil {
-    	ignoreExtraElements = *filter.IgnoreExtraElements
-    }
-    return XPathFilterProps{
-    	caseInsensitive,
+	if filter.IgnoreExtraElements != nil {
+		ignoreExtraElements = *filter.IgnoreExtraElements
+	}
+	return XPathFilterProps{
+		caseInsensitive,
 		ignoreArrayOrder,
 		ignoreExtraElements,
-    }
+	}
 }
 
 func loadXPathFilterRules(filterPath *XPathFilter, caseInsensitive bool) []Rule {
@@ -251,11 +252,11 @@ func loadXPathFilterRules(filterPath *XPathFilter, caseInsensitive bool) []Rule 
 }
 
 type XPathFactory interface {
-    generateXPathRule(query string, xPathFilterProps *XPathFilterProps) (Rule, error)
-    generateMatchesXPathRule(filterPath *XPathFilter, xPathFilterPropsDefault *XPathFilterProps) (Rule, *XPathFilterProps, error)
+	generateXPathRule(query string, xPathFilterProps *XPathFilterProps) (Rule, error)
+	generateMatchesXPathRule(filterPath *XPathFilter, xPathFilterPropsDefault *XPathFilterProps) (Rule, *XPathFilterProps, error)
 }
 
-type XPathJsonFactory struct {}
+type XPathJsonFactory struct{}
 
 func (xPathFactory XPathJsonFactory) generateXPathRule(query string, xPathFilterProps *XPathFilterProps) (Rule, error) {
 	node, err := jsonquery.Parse(strings.NewReader(query))
@@ -280,7 +281,7 @@ func (xPathFactory XPathJsonFactory) generateMatchesXPathRule(filterPath *XPathF
 		if err != nil {
 			return nil, err
 		}
-    	xPathRules = append(xPathRules, ruleJson)
+		xPathRules = append(xPathRules, ruleJson)
 	}
 	/*if filterPath.EqualToXml != nil {
 		ruleXml, err := xPathFactory.generateXPathRule(*filterPath.EqualToXml, &xPathFilterPropsLocal)
@@ -302,7 +303,7 @@ func (xPathFactory XPathJsonFactory) generateMatchesXPathRule(filterPath *XPathF
 	return rule, nil
 }
 
-type XPathXmlFactory struct {}
+type XPathXmlFactory struct{}
 
 func (xPathFactory XPathXmlFactory) generateXPathRule(query string, xPathFilterProps *XPathFilterProps) (Rule, error) {
 	node, err := xmlquery.Parse(strings.NewReader(query))
@@ -323,12 +324,12 @@ func (xPathFactory XPathXmlFactory) generateMatchesXPathRule(filterPath *XPathFi
 	xPathFilterPropsLocal := loadXPathFilterProps(filterPath, xPathFilterPropsDefault)
 	xPathRules := loadXPathFilterRules(filterPath, xPathFilterPropsLocal.caseInsensitive)
 	/*if filterPath.EqualToJson != nil {
-		ruleJson, err := xPathFactory.generateXPathRule(*filterPath.EqualToJson, &xPathFilterPropsLocal)
-		if err != nil {
-			return nil, err
-		}
-    	xPathRules = append(xPathRules, ruleJson)
-	}*/
+			ruleJson, err := xPathFactory.generateXPathRule(*filterPath.EqualToJson, &xPathFilterPropsLocal)
+			if err != nil {
+				return nil, err
+			}
+	    	xPathRules = append(xPathRules, ruleJson)
+		}*/
 	if filterPath.EqualToXml != nil {
 		ruleXml, err := xPathFactory.generateXPathRule(*filterPath.EqualToXml, &xPathFilterPropsLocal)
 		if err != nil {
@@ -350,36 +351,36 @@ func (xPathFactory XPathXmlFactory) generateMatchesXPathRule(filterPath *XPathFi
 }
 
 func parseRules(filter *Filter, defaultAnd bool) (*BlockRule, error) {
-    rules, err := parseRule(filter)
-    if err != nil {
-    	return nil, err
-    }
-    rulesAnd := []Rule{}
-    rulesOr := []Rule{}
-    if defaultAnd {
-    	rulesAnd = append(rulesAnd, rules...)
-    } else {
+	rules, err := parseRule(filter)
+	if err != nil {
+		return nil, err
+	}
+	rulesAnd := []Rule{}
+	rulesOr := []Rule{}
+	if defaultAnd {
+		rulesAnd = append(rulesAnd, rules...)
+	} else {
 		rulesOr = append(rulesOr, rules...)
-    }
-    if len(filter.And) > 0 {
-    	for _, filterAnd := range filter.And {
-    		parsedRules, err := parseRule(&filterAnd)
-    		if err != nil {
-    			return nil, err
-    		}
-    		rulesAnd = append(rulesAnd, parsedRules...)
-    	}
-    }
-    if len(filter.Or) > 0 {
-    	for _, filterOr := range filter.Or {
-    		parsedRules, err := parseRule(&filterOr)
-    		if err != nil {
-    			return nil, err
-    		}
-    		rulesOr = append(rulesOr, parsedRules...)
-    	}
-    }
-    return &BlockRule{rulesAnd, rulesOr}, nil
+	}
+	if len(filter.And) > 0 {
+		for _, filterAnd := range filter.And {
+			parsedRules, err := parseRule(&filterAnd)
+			if err != nil {
+				return nil, err
+			}
+			rulesAnd = append(rulesAnd, parsedRules...)
+		}
+	}
+	if len(filter.Or) > 0 {
+		for _, filterOr := range filter.Or {
+			parsedRules, err := parseRule(&filterOr)
+			if err != nil {
+				return nil, err
+			}
+			rulesOr = append(rulesOr, parsedRules...)
+		}
+	}
+	return &BlockRule{rulesAnd, rulesOr}, nil
 }
 
 func parseRule(filter *Filter) ([]Rule, error) {
@@ -449,7 +450,7 @@ func parseRule(filter *Filter) ([]Rule, error) {
 		if err != nil {
 			return nil, err
 		}
-    	rules = append(rules, rule)
+		rules = append(rules, rule)
 	}
 	if filter.EqualToXml != nil {
 		rule, err := xPathXmlFactory.generateXPathRule(*filter.EqualToXml, &xPathFilterProps)
@@ -479,27 +480,27 @@ func parseRule(filter *Filter) ([]Rule, error) {
 }
 
 func parseRulesMulti(filter *Filter) (*ParsedRules, error) {
-    rulesAnd := []Rule{}
-    rulesOr := []Rule{}
-    if len(filter.Includes) > 0 {
-    	for _, filterAnd := range filter.HasExactly {
-    		parsedRules, err := parseRuleMulti(&filterAnd)
-    		if err != nil {
-    			return nil, err
-    		}
-    		rulesAnd = append(rulesAnd, parsedRules...)
-    	}
-    }
-    if len(filter.HasExactly) > 0 {
-    	for _, filterOr := range filter.Includes {
-    		parsedRules, err := parseRuleMulti(&filterOr)
-    		if err != nil {
-    			return nil, err
-    		}
-    		rulesOr = append(rulesOr, parsedRules...)
-    	}
-    }
-    return &ParsedRules{rulesAnd, rulesOr}, nil
+	rulesAnd := []Rule{}
+	rulesOr := []Rule{}
+	if len(filter.Includes) > 0 {
+		for _, filterAnd := range filter.HasExactly {
+			parsedRules, err := parseRuleMulti(&filterAnd)
+			if err != nil {
+				return nil, err
+			}
+			rulesAnd = append(rulesAnd, parsedRules...)
+		}
+	}
+	if len(filter.HasExactly) > 0 {
+		for _, filterOr := range filter.Includes {
+			parsedRules, err := parseRuleMulti(&filterOr)
+			if err != nil {
+				return nil, err
+			}
+			rulesOr = append(rulesOr, parsedRules...)
+		}
+	}
+	return &ParsedRules{rulesAnd, rulesOr}, nil
 }
 
 func parseRuleMulti(filter *MultiFilter) ([]Rule, error) {
