@@ -151,8 +151,12 @@ func TestMatchesXmlXPathRule(t *testing.T) {
 func TestEqualToJsonRule(t *testing.T) {
 	xPathFilterProps := XPathFilterProps{true, true, true}
 	xPathJsonFactory := XPathJsonFactory{}
-	json := ""
-	xPathFilter := XPathFilter{EqualToJson:&json}
+	exp := "$.outer"
+	json := "{ \"inner\": 42 }"
+	xPathFilter := XPathFilter{
+		EqualToJson:&json,
+		Expression:&exp,
+	}
 	rule, err := xPathJsonFactory.generateMatchesXPathRule(&xPathFilter, &xPathFilterProps)
 	if err != nil {
 		t.Fatalf(`EqualToJsonRule %s failed with error: %s`, json, err)
@@ -160,7 +164,7 @@ func TestEqualToJsonRule(t *testing.T) {
 	value := ""
 	res, err := rule.check(value)
 	if err != nil || !res {
-        t.Fatalf(`EqualToJsonRule %s failed checking: %s`, json, value)
+        t.Fatalf(`EqualToJsonRule %s, %s failed checking: %s`, json, exp, value)
     }
 }
 
