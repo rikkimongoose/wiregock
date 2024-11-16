@@ -176,7 +176,7 @@ func (rule MatchesXmlXPathRule) check(str string) (bool, error) {
 		}
 		return false, nil
 	}
-	return (xmlquery.QuerySelector(node, rule.xPath) != nil), nil
+	return (xmlquery.QuerySelector(nodeBase, rule.xPath) != nil), nil
 }
 
 func (rule MatchesJsonXPathRule) check(str string) (bool, error) {
@@ -197,7 +197,7 @@ func (rule MatchesJsonXPathRule) check(str string) (bool, error) {
 		}
 		return false, nil
 	}
-	return (jsonquery.QuerySelector(node, rule.xPath) != nil), nil
+	return (jsonquery.QuerySelector(nodeBase, rule.xPath) != nil), nil
 }
 
 func (rule AbsentRule) check(str string) (bool, error) {
