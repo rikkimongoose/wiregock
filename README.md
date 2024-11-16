@@ -61,4 +61,4 @@ Stub matching and verification queries can use the following request attributes:
 
 ### Templates
 
-Templates support with default request variables like it was implemented in Wiremock.go
+Templates support with default request variables like it was implemented in Wiremock.
