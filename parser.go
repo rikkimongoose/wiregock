@@ -27,8 +27,8 @@ type DataContext struct {
 }
 
 type ParsedConditions struct {
-	isMultipart bool
-	condition   Condition
+	IsMultipart bool
+	Condition   Condition
 }
 
 func isMulti(filter *Filter) bool {
@@ -114,8 +114,8 @@ func ParseCondition(request *MockRequest, context *DataContext) (*ParsedConditio
 	}
 
 	return &ParsedConditions{
-		isMultipart: isMultipart,
-		condition:   AndCondition{conditions},
+		IsMultipart: isMultipart,
+		Condition:   AndCondition{conditions},
 	}, nil
 }
 
