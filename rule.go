@@ -159,14 +159,14 @@ func (rule EqualToJsonRule) check(str string) (bool, error) {
 }
 
 func (rule MatchesXmlXPathRule) check(str string) (bool, error) {
-	node, err := xmlquery.Parse(strings.NewReader(str))
+	nodeBase, err := xmlquery.Parse(strings.NewReader(str))
 	if err != nil {
 		return false, err
 	}
 	if rule.innerRule != nil {
-		nodesByXPath := xmlquery.QuerySelectorAll(node, rule.xPath)
+		nodesByXPath := xmlquery.QuerySelectorAll(nodeBase, rule.xPath)
 		for _, node := range nodesByXPath {
-			ok, err := rule.innerRule.check(node.Data)
+			ok, err := rule.innerRule.check(node.OutputXML(true))
 			if err != nil {
 				return false, err
 			}
@@ -180,14 +180,14 @@ func (rule MatchesXmlXPathRule) check(str string) (bool, error) {
 }
 
 func (rule MatchesJsonXPathRule) check(str string) (bool, error) {
-	node, err := jsonquery.Parse(strings.NewReader(str))
+	nodeBase, err := jsonquery.Parse(strings.NewReader(str))
 	if err != nil {
 		return false, err
 	}
 	if rule.innerRule != nil {
-		nodesByXPath := jsonquery.QuerySelectorAll(node, rule.xPath)
+		nodesByXPath := jsonquery.QuerySelectorAll(nodeBase, rule.xPath)
 		for _, node := range nodesByXPath {
-			ok, err := rule.innerRule.check(node.Data)
+			ok, err := rule.innerRule.check(node.OutputXML())
 			if err != nil {
 				return false, err
 			}

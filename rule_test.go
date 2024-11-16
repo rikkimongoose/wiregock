@@ -135,11 +135,11 @@ func TestRegExRuleCheck(t *testing.T) {
 
 }
 */
-/*func TestMatchesXmlXPathRule(t *testing.T) {
+func TestMatchesXmlXPathRule(t *testing.T) {
 	xPathFilterProps := XPathFilterProps{true, true, true}
 	xPathXmlFactory := XPathXmlFactory{}
-	exp := "$.outer"
-	xml := "<search-results>foo</search-results>"
+	exp := "//todo-item"
+	xml := "<todo-item>Do the washing</todo-item>"
 	xPathFilter := XPathFilter{
 		EqualToXml: &xml,
 		Expression: exp,
@@ -148,12 +148,12 @@ func TestRegExRuleCheck(t *testing.T) {
 	if err != nil {
 		t.Fatalf(`MatchesXmlXPathRule %s failed with error: %s`, xml, err)
 	}
-	value := "foo"
+	value := "<foo><todo-item>Do the washing</todo-item></foo>"
 	res, err := rule.check(value)
 	if err != nil || !res {
 		t.Fatalf(`MatchesXmlXPathRule %s failed checking: %s`, xml, value)
 	}
-}*/
+}
 
 func TestEqualToJsonRule(t *testing.T) {
 	xPathFilterProps := XPathFilterProps{true, true, true}

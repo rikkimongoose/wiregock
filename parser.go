@@ -26,11 +26,16 @@ type DataContext struct {
 	MultipartForm func() []FileFormData
 }
 
+type ParsedConditions struct {
+	isMultipart bool
+	condition   Condition
+}
+
 func isMulti(filter *Filter) bool {
 	return len(filter.Includes) > 0 || len(filter.HasExactly) > 0
 }
 
-func ParseCondition(request *MockRequest, context *DataContext) (Condition, error) {
+func ParseCondition(request *MockRequest, context *DataContext) (*ParsedConditions, error) {
 	conditions := []Condition{}
 	if request.Headers != nil {
 		for key, value := range request.Headers {
@@ -86,7 +91,9 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 		}
 	}
 
-	if len(request.MultipartPatterns) > 0 {
+	isMultipart := len(request.MultipartPatterns) > 0
+
+	if isMultipart {
 		for _, value := range request.MultipartPatterns {
 			newCondition, err := createMultipartFileCondition(&value, func() []FileFormData { return context.MultipartForm() })
 			if err != nil {
@@ -106,7 +113,10 @@ func ParseCondition(request *MockRequest, context *DataContext) (Condition, erro
 		}
 	}
 
-	return AndCondition{conditions}, nil
+	return &ParsedConditions{
+		isMultipart: isMultipart,
+		condition:   AndCondition{conditions},
+	}, nil
 }
 
 type ParsedRules struct {
@@ -283,13 +293,13 @@ func (xPathFactory XPathJsonFactory) generateMatchesXPathRule(filterPath *XPathF
 		}
 		xPathRules = append(xPathRules, ruleJson)
 	}
-	/*if filterPath.EqualToXml != nil {
+	if filterPath.EqualToXml != nil {
 		ruleXml, err := xPathFactory.generateXPathRule(*filterPath.EqualToXml, &xPathFilterPropsLocal)
 		if err != nil {
 			return nil, err
 		}
 		xPathRules = append(xPathRules, ruleXml)
-	}*/
+	}
 	for _, filterPathSub := range filterPath.And {
 		ruleSub, err := xPathFactory.generateMatchesXPathRule(&filterPathSub, &xPathFilterPropsLocal)
 		if err != nil {
@@ -323,13 +333,13 @@ func (xPathFactory XPathXmlFactory) generateMatchesXPathRule(filterPath *XPathFi
 	}
 	xPathFilterPropsLocal := loadXPathFilterProps(filterPath, xPathFilterPropsDefault)
 	xPathRules := loadXPathFilterRules(filterPath, xPathFilterPropsLocal.caseInsensitive)
-	/*if filterPath.EqualToJson != nil {
-			ruleJson, err := xPathFactory.generateXPathRule(*filterPath.EqualToJson, &xPathFilterPropsLocal)
-			if err != nil {
-				return nil, err
-			}
-	    	xPathRules = append(xPathRules, ruleJson)
-		}*/
+	if filterPath.EqualToJson != nil {
+		ruleJson, err := xPathFactory.generateXPathRule(*filterPath.EqualToJson, &xPathFilterPropsLocal)
+		if err != nil {
+			return nil, err
+		}
+		xPathRules = append(xPathRules, ruleJson)
+	}
 	if filterPath.EqualToXml != nil {
 		ruleXml, err := xPathFactory.generateXPathRule(*filterPath.EqualToXml, &xPathFilterPropsLocal)
 		if err != nil {
