@@ -1,64 +1,80 @@
 package wiregock
 
 import (
-    "regexp"
-    "strings"
-    "bytes"
-    "reflect"
-    "time"
+	"bytes"
+	"reflect"
+	"regexp"
+	"strings"
+	"time"
+
+	"github.com/IGLOU-EU/go-wildcard/v2"
 	"github.com/antchfx/jsonquery"
 	"github.com/antchfx/xmlquery"
-	"github.com/IGLOU-EU/go-wildcard/v2"
 	"github.com/antchfx/xpath"
 )
 
 type Rule interface {
-    check(str string) (bool, error)
+	check(str string) (bool, error)
 }
 
 type NotRule struct {
-    base Rule
+	base Rule
 }
 
 type EqualToRule struct {
-    val string
-    caseInsensitive bool
+	val             string
+	caseInsensitive bool
 }
 
 type EqualToBinaryRule struct {
-    val []byte
+	val []byte
 }
 
 type DateTimeRule struct {
-    before          *time.Time
-    after           *time.Time
-    equalToDateTime *time.Time
-    timeFormat string //default: time.RFC3339
+	before          *time.Time
+	after           *time.Time
+	equalToDateTime *time.Time
+	timeFormat      string //default: time.RFC3339
 }
 
 type ContainsRule struct {
-    val string
-    caseInsensitive bool
+	val             string
+	caseInsensitive bool
 }
 
 type WildcardsRule struct {
-    val string
-    caseInsensitive bool
+	val             string
+	caseInsensitive bool
 }
 type RegExRule struct {
-    regex *regexp.Regexp
+	regex *regexp.Regexp
 }
 
-type MatchesXPathRule struct {
-    xPath *xpath.Expr
+type MatchesBaseXPathRule struct {
+	xPath     *xpath.Expr
+	innerRule Rule
 }
 
+type MatchesJsonXPathRule struct {
+	MatchesBaseXPathRule
+}
+
+type MatchesXmlXPathRule struct {
+	MatchesBaseXPathRule
+}
+
+type EqualToBaseRule struct {
+	IgnoreArrayOrder    bool
+	IgnoreExtraElements bool
+}
 type EqualToXmlRule struct {
-    node *xmlquery.Node
+	node *xmlquery.Node
+	EqualToBaseRule
 }
 
 type EqualToJsonRule struct {
-    node *jsonquery.Node
+	node *jsonquery.Node
+	EqualToBaseRule
 }
 
 type AbsentRule struct {
@@ -68,6 +84,11 @@ type TrueRule struct {
 }
 
 type FalseRule struct {
+}
+
+type BlockRule struct {
+	rulesAnd []Rule
+	rulesOr  []Rule
 }
 
 func (rule NotRule) check(str string) (bool, error) {
@@ -83,7 +104,7 @@ func (rule EqualToRule) check(str string) (bool, error) {
 }
 
 func (rule EqualToBinaryRule) check(str string) (bool, error) {
-	return bytes.Compare(rule.val, []byte(str)) == 0, nil
+	return bytes.Equal(rule.val, []byte(str)), nil
 }
 
 func (rule DateTimeRule) check(str string) (bool, error) {
@@ -126,7 +147,7 @@ func (rule EqualToXmlRule) check(str string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return reflect.DeepEqual(&rule.node, node), nil
+	return reflect.DeepEqual(*rule.node, *node), nil
 }
 
 func (rule EqualToJsonRule) check(str string) (bool, error) {
@@ -134,19 +155,49 @@ func (rule EqualToJsonRule) check(str string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return reflect.DeepEqual(&rule.node, node), nil
+	return reflect.DeepEqual(*rule.node, *node), nil
 }
 
-func (rule MatchesXPathRule) check(str string) (bool, error) {
-	node, err := jsonquery.Parse(strings.NewReader(str))
+func (rule MatchesXmlXPathRule) check(str string) (bool, error) {
+	nodeBase, err := xmlquery.Parse(strings.NewReader(str))
 	if err != nil {
-		node, err := xmlquery.Parse(strings.NewReader(str))
-		if err != nil {
-			return false, err
-		}
-		return (xmlquery.QuerySelector(node, rule.xPath) != nil), nil
+		return false, err
 	}
-	return (jsonquery.QuerySelector(node, rule.xPath) != nil), nil
+	if rule.innerRule != nil {
+		nodesByXPath := xmlquery.QuerySelectorAll(nodeBase, rule.xPath)
+		for _, node := range nodesByXPath {
+			ok, err := rule.innerRule.check(node.OutputXML(true))
+			if err != nil {
+				return false, err
+			}
+			if ok {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+	return (xmlquery.QuerySelector(nodeBase, rule.xPath) != nil), nil
+}
+
+func (rule MatchesJsonXPathRule) check(str string) (bool, error) {
+	nodeBase, err := jsonquery.Parse(strings.NewReader(str))
+	if err != nil {
+		return false, err
+	}
+	if rule.innerRule != nil {
+		nodesByXPath := jsonquery.QuerySelectorAll(nodeBase, rule.xPath)
+		for _, node := range nodesByXPath {
+			ok, err := rule.innerRule.check(node.OutputXML())
+			if err != nil {
+				return false, err
+			}
+			if ok {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+	return (jsonquery.QuerySelector(nodeBase, rule.xPath) != nil), nil
 }
 
 func (rule AbsentRule) check(str string) (bool, error) {
@@ -159,4 +210,39 @@ func (rule TrueRule) check(str string) (bool, error) {
 
 func (rule FalseRule) check(str string) (bool, error) {
 	return false, nil
+}
+
+func (rule BlockRule) check(str string) (bool, error) {
+	if rule.rulesAnd != nil {
+		for _, ruleAnd := range rule.rulesAnd {
+			res, err := ruleAnd.check(str)
+			if err != nil {
+				return false, err
+			}
+			if !res {
+				return false, nil
+			}
+		}
+	}
+	resultAnd := rule.rulesAnd == nil || len(rule.rulesAnd) > 0
+	if rule.rulesOr != nil {
+		for _, ruleOr := range rule.rulesOr {
+			res, err := ruleOr.check(str)
+			if err != nil {
+				return false, err
+			}
+			if res {
+				return true, nil
+			}
+		}
+	}
+	resultOr := (rule.rulesOr == nil) || len(rule.rulesOr) == 0
+	return resultAnd && resultOr, nil
+}
+
+func generateXPath(str string, namespaces map[string]string) (*xpath.Expr, error) {
+	if namespaces != nil {
+		return xpath.CompileWithNS(str, namespaces)
+	}
+	return xpath.Compile(str)
 }

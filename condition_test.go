@@ -3,6 +3,8 @@ package wiregock
 import (
 	"encoding/json"
 	"testing"
+    "reflect"
+    "go.mongodb.org/mongo-driver/bson"
 )
 
 func TestUnmarshaling(t *testing.T) {
@@ -64,9 +66,9 @@ func TestUnmarshaling(t *testing.T) {
 
 	var mockData MockData
 	err := json.Unmarshal(body, &mockData)
-	if err != nil {
-    	t.Fatalf(`Error parsing JSON format: %s`, err)
-	}
+    if err != nil {
+        t.Fatalf(`Error parsing JSON format: %s`, err)
+    }
     if *mockData.Request.UrlPath != "/everything" {
         t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.urlPath")
     }
@@ -79,9 +81,9 @@ func TestUnmarshaling(t *testing.T) {
     if *mockData.Request.QueryParameters["search_term"].EqualTo != "WireMock" {
         t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.QueryParameters[\"search_term\"].EqualTo")
     }
-	if *mockData.Request.Cookies["session"].Matches != ".*12345.*" {
-    	t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.Cookies.Session[\"matches\"].EqualTo")
-	}
+    if *mockData.Request.Cookies["session"].Matches != ".*12345.*" {
+        t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.Cookies.Session[\"matches\"].EqualTo")
+    }
     if *mockData.Request.BodyPatterns[0].EqualToXml != "<search-results />" {
         t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.BodyPatterns[0].EqualToXml")
     }
@@ -97,7 +99,7 @@ func TestUnmarshaling(t *testing.T) {
 }
 
 func TestAndCondition(t *testing.T) {
-    conditionTrue := AndCondition{[]Condition{DataCondition{rulesAnd:[]Rule{TrueRule{}}}}}
+    conditionTrue := AndCondition{[]Condition{DataCondition{blockRule:BlockRule{rulesAnd:[]Rule{TrueRule{}}}}}}
     res, err := conditionTrue.Check()
     if err != nil {
         t.Fatalf(`Error conditionTrue: %s`, err)
@@ -105,7 +107,7 @@ func TestAndCondition(t *testing.T) {
     if !res {
         t.Fatalf(`Wrong execution conditionTrue`)
     }
-    conditionTrueTrue := AndCondition{[]Condition{DataCondition{rulesAnd:[]Rule{TrueRule{}, TrueRule{}}}}}
+    conditionTrueTrue := AndCondition{[]Condition{DataCondition{blockRule:BlockRule{rulesAnd:[]Rule{TrueRule{}, TrueRule{}}}}}}
     res, err = conditionTrueTrue.Check()
     if err != nil {
         t.Fatalf(`Error conditionTrueTrue: %s`, err)
@@ -113,7 +115,7 @@ func TestAndCondition(t *testing.T) {
     if !res {
         t.Fatalf(`Wrong execution conditionTrueTrue`)
     }
-    conditionTrueFalse := AndCondition{[]Condition{DataCondition{rulesAnd:[]Rule{TrueRule{}, FalseRule{}}}}}
+    conditionTrueFalse := AndCondition{[]Condition{DataCondition{blockRule:BlockRule{rulesAnd:[]Rule{TrueRule{}, FalseRule{}}}}}}
     res, err = conditionTrueFalse.Check()
     if err != nil {
         t.Fatalf(`Error conditionTrueFalse: %s`, err)
@@ -121,7 +123,7 @@ func TestAndCondition(t *testing.T) {
     if res {
         t.Fatalf(`Wrong execution conditionTrueFalse`)
     }
-    conditionTrueFalseOr := AndCondition{[]Condition{DataCondition{rulesOr:[]Rule{TrueRule{}, FalseRule{}}}}}
+    conditionTrueFalseOr := AndCondition{[]Condition{DataCondition{blockRule:BlockRule{rulesOr:[]Rule{TrueRule{}, FalseRule{}}}}}}
     res, err = conditionTrueFalseOr.Check()
     if err != nil {
         t.Fatalf(`Error conditionTrueFalseOr: %s`, err)
@@ -129,7 +131,7 @@ func TestAndCondition(t *testing.T) {
     if !res {
         t.Fatalf(`Wrong execution conditionTrueFalseOr`)
     }
-    conditionTrueTrueOr := AndCondition{[]Condition{DataCondition{rulesOr:[]Rule{TrueRule{}, TrueRule{}}}}}
+    conditionTrueTrueOr := AndCondition{[]Condition{DataCondition{blockRule:BlockRule{rulesOr:[]Rule{TrueRule{}, TrueRule{}}}}}}
     res, err = conditionTrueTrueOr.Check()
     if err != nil {
         t.Fatalf(`Error conditionTrueTrueOr: %s`, err)
@@ -210,5 +212,21 @@ func TestUnmarshalingXPathFilter(t *testing.T) {
     }
     if mockData.Request.BodyPatterns[1].MatchesXPath.XPathNamespaces == nil {
         t.Fatalf(`Unable to load from parsed JSON: %s`, "mockData.Request.BodyPatterns[1].MatchesXPath.XPathNamespaces")
+    }
+}
+
+func TestUnmarshalingBsonXPathFilter(t *testing.T) {
+    source := map[string]string{"foo": "boo"}
+    bin, err := bson.Marshal(source)
+    if err != nil {
+        t.Fatalf(`Binary marshaling error: %s`, err)
+    }
+    sourceRestored := make(map[string]string)
+    err = bson.Unmarshal(bin, &sourceRestored)
+    if err != nil {
+        t.Fatalf(`bson.Raw unmarshaling error: %s`, err)
+    }
+    if !reflect.DeepEqual(source, sourceRestored) {
+        t.Fatalf(`Wrong unmarshaling`)
     }
 }
