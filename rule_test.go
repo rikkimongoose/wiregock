@@ -112,29 +112,26 @@ func TestRegExRuleCheck(t *testing.T) {
 	}
 }
 
-/*
-	func TestMatchesJsonXPathRule(t *testing.T) {
-		xPathFilterProps := XPathFilterProps{true, true, true}
-		xPathJsonFactory := XPathJsonFactory{}
-		exp := "$.outer"
-		json := "{ \"inner\": 42 }"
-		xPathFilter := XPathFilter{
-			EqualToJson:&json,
-			Expression:exp,
-		}
-		value := `{ "things": [ { "name": "RequiredThing" }, { "name": "Wiremock" } ] }`
-		res, err := rule.check(value)
-		if err != nil || !res {
-	        t.Fatalf(`MatchesJsonXPathRule %s failed checking: %s`, jsonXPath, value)
-	    }
-	    value = `{ "things": [ { "name": "RequiredThing" } ] }`
-		res, err = rule.check(value)
-		if err != nil || !res {
-	        t.Fatalf(`MatchesJsonXPathRule %s failed checking: %s`, jsonXPath, value)
-	    }
+/*func TestMatchesJsonXPathRule(t *testing.T) {
+	xPathFilterProps := XPathFilterProps{true, true, true}
+	xPathJsonFactory := XPathJsonFactory{}
+	exp := "$.foo"
+	json := `{ "boo": 42 }`
+	xPathFilter := XPathFilter{
+		EqualToJson: &json,
+		Expression:  exp,
+	}
+	rule, err := xPathJsonFactory.generateMatchesXPathRule(&xPathFilter, &xPathFilterProps)
+	if err != nil {
+		t.Fatalf(`MatchesJsonXPathRule %s failed with error: %s`, json, err)
+	}
+	value := `{ "foo": { "boo": 42 } }`
+	res, err := rule.check(value)
+	if err != nil || !res {
+		t.Fatalf(`MatchesJsonXPathRule %s failed checking: %s`, json, value)
+	}
+}*/
 
-}
-*/
 func TestMatchesXmlXPathRule(t *testing.T) {
 	xPathFilterProps := XPathFilterProps{true, true, true}
 	xPathXmlFactory := XPathXmlFactory{}

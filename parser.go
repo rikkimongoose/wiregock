@@ -470,13 +470,13 @@ func parseRule(filter *Filter) ([]Rule, error) {
 		rules = append(rules, rule)
 	}
 
-	if filter.MatchesJsonPath != nil {
+	/*if filter.MatchesJsonPath != nil {
 		rule, err := xPathJsonFactory.generateMatchesXPathRule(filter.MatchesJsonPath, &xPathFilterProps)
 		if err != nil {
 			return nil, err
 		}
 		rules = append(rules, rule)
-	}
+	}*/
 
 	if filter.MatchesXPath != nil {
 		rule, err := xPathXmlFactory.generateMatchesXPathRule(filter.MatchesXPath, &xPathFilterProps)
