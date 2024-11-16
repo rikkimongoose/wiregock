@@ -156,7 +156,7 @@ func TestEqualToJsonRule(t *testing.T) {
 	xPathFilterProps := XPathFilterProps{true, true, true}
 	xPathJsonFactory := XPathJsonFactory{}
 	json := `{"foo": "boo", "boo": "foo"}`
-	rule, err := xPathJsonFactory.generateXPathRule(json, &xPathFilterProps)
+	rule, err := xPathJsonFactory.generateEqualsRule(json, &xPathFilterProps)
 	if err != nil {
 		t.Fatalf(`EqualToJsonRule %s failed with error: %s`, json, err)
 	}
@@ -171,7 +171,7 @@ func TestEqualToXmlRule(t *testing.T) {
 	xPathFilterProps := XPathFilterProps{true, true, true}
 	xPathXmlFactory := XPathXmlFactory{}
 	xml := "<thing>Hello</thing>"
-	rule, err := xPathXmlFactory.generateXPathRule(xml, &xPathFilterProps)
+	rule, err := xPathXmlFactory.generateEqualsRule(xml, &xPathFilterProps)
 	if err != nil {
 		t.Fatalf(`EqualToXmlRule %s failed with error: %s`, xml, err)
 	}
