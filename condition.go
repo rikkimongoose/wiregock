@@ -90,6 +90,7 @@ type MockData struct {
 		Headers      map[string]string `json:"headers,omitempty" bson:"headers,omitempty"`
 		Cookies      map[string]string `json:"cookies,omitempty" bson:"cookies,omitempty"`
 	} `json:"response" bson:"response"`
+	Vars *map[string]string `json:"vars,omitempty" bson:"vars,omitempty"`
 }
 
 type Condition interface {
