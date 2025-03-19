@@ -26,6 +26,7 @@ func TestParseRule(t *testing.T) {
 	//MatchesJsonPath := "MatchesJsonPath"
 	EqualToXml := "<thing>Hello</thing>"
 	MatchesXPath := "MatchesXPath"
+	// MatchesJsonSchema := "MatchesJsonSchema"
 
 	filter := Filter{
 		Contains:            &Contains,
@@ -44,6 +45,7 @@ func TestParseRule(t *testing.T) {
 		IgnoreArrayOrder:    &IgnoreArrayOrder,
 		IgnoreExtraElements: &IgnoreExtraElements,
 		//	MatchesJsonPath:     &XPathFilter{Expression: MatchesJsonPath},
+		//  MatchesJsonSchema: &MatchesJsonSchema
 		EqualToXml:   &EqualToXml,
 		MatchesXPath: &XPathFilter{Expression: MatchesXPath},
 	}

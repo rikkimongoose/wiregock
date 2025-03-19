@@ -68,7 +68,8 @@ type MatchesXmlXPathRule struct {
 }
 
 type MatchesJsonPathRule struct {
-	path string
+	path      string
+	innerRule Rule
 }
 
 type MatchesJsonSchemaRule struct {
@@ -217,9 +218,16 @@ func (rule MatchesJsonPathRule) check(str string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	for _, value := range result.([]interface{}) {
-		if strings.Compare(fmt.Sprintf("%s", value), str) == 0 {
-			return true, nil
+	if rule.innerRule != nil {
+		for _, value := range result.([]interface{}) {
+			valueStr := fmt.Sprintf("%s", value)
+			ok, err := rule.innerRule.check(valueStr)
+			if err != nil {
+				return false, err
+			}
+			if ok {
+				return true, nil
+			}
 		}
 	}
 	return false, nil

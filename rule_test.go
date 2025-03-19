@@ -4,9 +4,6 @@ import (
 	"regexp"
 	"testing"
 	"time"
-	//"github.com/antchfx/jsonquery"
-	//"github.com/antchfx/xmlquery"
-	//"github.com/antchfx/xpath"
 )
 
 func TestEqualToRuleCheck(t *testing.T) {
