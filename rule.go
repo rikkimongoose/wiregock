@@ -2,15 +2,19 @@ package wiregock
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/IGLOU-EU/go-wildcard/v2"
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/antchfx/jsonquery"
 	"github.com/antchfx/xmlquery"
 	"github.com/antchfx/xpath"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 type Rule interface {
@@ -61,6 +65,14 @@ type MatchesJsonXPathRule struct {
 
 type MatchesXmlXPathRule struct {
 	MatchesBaseXPathRule
+}
+
+type MatchesJsonPathRule struct {
+	path string
+}
+
+type MatchesJsonSchemaRule struct {
+	schema string
 }
 
 type EqualToBaseRule struct {
@@ -198,6 +210,36 @@ func (rule MatchesJsonXPathRule) check(str string) (bool, error) {
 		return false, nil
 	}
 	return (jsonquery.QuerySelector(nodeBase, rule.xPath) != nil), nil
+}
+
+func (rule MatchesJsonPathRule) check(str string) (bool, error) {
+	result, err := jsonpath.Get(rule.path, str)
+	if err != nil {
+		return false, err
+	}
+	for _, value := range result.([]interface{}) {
+		if strings.Compare(fmt.Sprintf("%s", value), str) == 0 {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (rule MatchesJsonSchemaRule) check(str string) (bool, error) {
+	schemaLoader := gojsonschema.NewStringLoader(rule.schema)
+	documentLoader := gojsonschema.NewStringLoader(str)
+	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
+	if err != nil {
+		return false, err
+	}
+	if result.Valid() {
+		return true, nil
+	}
+	var errs []error
+	for _, desc := range result.Errors() {
+		errs = append(errs, errors.New(desc.Description()))
+	}
+	return false, errors.Join(errs...)
 }
 
 func (rule AbsentRule) check(str string) (bool, error) {
