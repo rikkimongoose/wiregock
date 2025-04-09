@@ -55,17 +55,9 @@ type RegExRule struct {
 	regex *regexp.Regexp
 }
 
-type MatchesBaseXPathRule struct {
+type MatchesXmlXPathRule struct {
 	xPath     *xpath.Expr
 	innerRule Rule
-}
-
-type MatchesJsonXPathRule struct {
-	MatchesBaseXPathRule
-}
-
-type MatchesXmlXPathRule struct {
-	MatchesBaseXPathRule
 }
 
 type MatchesJsonPathRule struct {
@@ -81,6 +73,7 @@ type EqualToBaseRule struct {
 	IgnoreArrayOrder    bool
 	IgnoreExtraElements bool
 }
+
 type EqualToXmlRule struct {
 	node *xmlquery.Node
 	EqualToBaseRule
@@ -191,27 +184,6 @@ func (rule MatchesXmlXPathRule) check(str string) (bool, error) {
 		return false, nil
 	}
 	return (xmlquery.QuerySelector(nodeBase, rule.xPath) != nil), nil
-}
-
-func (rule MatchesJsonXPathRule) check(str string) (bool, error) {
-	nodeBase, err := jsonquery.Parse(strings.NewReader(str))
-	if err != nil {
-		return false, err
-	}
-	if rule.innerRule != nil {
-		nodesByXPath := jsonquery.QuerySelectorAll(nodeBase, rule.xPath)
-		for _, node := range nodesByXPath {
-			ok, err := rule.innerRule.check(node.OutputXML())
-			if err != nil {
-				return false, err
-			}
-			if ok {
-				return true, nil
-			}
-		}
-		return false, nil
-	}
-	return (jsonquery.QuerySelector(nodeBase, rule.xPath) != nil), nil
 }
 
 func (rule MatchesJsonPathRule) check(str string) (bool, error) {

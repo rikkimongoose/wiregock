@@ -3,8 +3,12 @@ package wiregock
 import (
 	"reflect"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/antchfx/jsonquery"
+	"github.com/antchfx/xmlquery"
 )
 
 func TestParseRule(t *testing.T) {
@@ -23,10 +27,30 @@ func TestParseRule(t *testing.T) {
 	EqualToJson := "{ \"total_results\": 4 }"
 	IgnoreArrayOrder := true
 	IgnoreExtraElements := true
-	MatchesJsonPath := "MatchesJsonPath"
+	MatchesJsonPath := "$.welcome.message[1]"
 	EqualToXml := "<thing>Hello</thing>"
-	MatchesXPath := "MatchesXPath"
-	MatchesJsonSchema := "MatchesJsonSchema"
+	MatchesXPath := "//todo-item"
+	MatchesJsonSchema := `{
+		"$id": "https://example.com/person.schema.json",
+		"$schema": "https://json-schema.org/draft/2020-12/schema",
+		"title": "Person",
+		"type": "object",
+		"properties": {
+			"firstName": {
+			"type": "string",
+			"description": "The person's first name."
+			},
+			"lastName": {
+			"type": "string",
+			"description": "The person's last name."
+			},
+			"age": {
+			"description": "Age in years which must be equal to or greater than zero.",
+			"type": "integer",
+			"minimum": 0
+			}
+		}
+	}`
 
 	filter := Filter{
 		Contains:            &Contains,
@@ -54,30 +78,55 @@ func TestParseRule(t *testing.T) {
 	if err != nil {
 		t.Fatalf(`Error parsing rule: %s`, err)
 	}
-	if !reflect.DeepEqual(rules[0], ContainsRule{Contains, CaseInsensitive}) {
-		t.Fatalf(`Error parsing: %s`, "ContainsRule")
+
+	equalToBaseRule := EqualToBaseRule{
+		IgnoreArrayOrder:    true,
+		IgnoreExtraElements: true,
 	}
-	if !reflect.DeepEqual(rules[1], EqualToRule{EqualTo, CaseInsensitive}) {
-		t.Fatalf(`Error parsing: %s`, "EqualToRule")
+	equalToJsonNode, err := jsonquery.Parse(strings.NewReader(EqualToJson))
+	if err != nil {
+		t.Fatalf(`Wrong example of Json Query: %s`, err)
 	}
-	if !reflect.DeepEqual(rules[2], EqualToBinaryRule{[]byte(BinaryEqualTo)}) {
-		t.Fatalf(`Error parsing: %s`, "EqualToBinaryRule")
+	equalToXmlNode, err := xmlquery.Parse(strings.NewReader(EqualToXml))
+	if err != nil {
+		t.Fatalf(`Wrong example of Xml Query: %s`, err)
 	}
-	if !reflect.DeepEqual(rules[3], NotRule{ContainsRule{DoesNotContain, CaseInsensitive}}) {
-		t.Fatalf(`Error parsing: %s`, "NotRule.ContainsRule")
+	if err != nil {
+		t.Fatalf(`Wrong example of Xml XPath: %s`, err)
 	}
-	if !reflect.DeepEqual(rules[4], RegExRule{regexp.MustCompile(Matches)}) {
-		t.Fatalf(`Error parsing: %s`, "RegExRule")
+	emptyBlockRule := BlockRule{rulesOr: []Rule{}}
+	rulesChecker := RulesChecker{rules, t}
+	rulesToCheck := map[string]Rule{
+		"ContainsRule":          ContainsRule{Contains, CaseInsensitive},
+		"EqualToRule":           EqualToRule{EqualTo, CaseInsensitive},
+		"EqualToBinaryRule":     EqualToBinaryRule{[]byte(BinaryEqualTo)},
+		"NotRule.ContainsRule":  NotRule{ContainsRule{DoesNotContain, CaseInsensitive}},
+		"RegExRule":             RegExRule{regexp.MustCompile(Matches)},
+		"NotRule.RegExRule":     NotRule{RegExRule{regexp.MustCompile(Matches)}},
+		"AbsentRule":            AbsentRule{},
+		"DateTimeRule":          DateTimeRule{&Before, &After, &EqualToDateTime, ActualFormat},
+		"EqualToJsonRule":       EqualToJsonRule{node: equalToJsonNode, EqualToBaseRule: equalToBaseRule},
+		"EqualToXmlRule":        EqualToXmlRule{node: equalToXmlNode, EqualToBaseRule: equalToBaseRule},
+		"EqualToJsonSchemaRule": MatchesJsonSchemaRule{MatchesJsonSchema},
+		"MatchesJsonPathRule":   MatchesJsonPathRule{path: MatchesJsonPath, innerRule: emptyBlockRule},
 	}
-	if !reflect.DeepEqual(rules[5], NotRule{RegExRule{regexp.MustCompile(Matches)}}) {
-		t.Fatalf(`Error parsing: %s`, "NotRule.RegExRule")
+	for key, rule := range rulesToCheck {
+		rulesChecker.checkRule(rule, key)
 	}
-	if !reflect.DeepEqual(rules[6], AbsentRule{}) {
-		t.Fatalf(`Error parsing: %s`, "AbsentRule")
+}
+
+type RulesChecker struct {
+	rules []Rule
+	t     *testing.T
+}
+
+func (rulesChecker RulesChecker) checkRule(ruleToCheck Rule, ruleTitle string) {
+	for _, rule := range rulesChecker.rules {
+		if reflect.DeepEqual(rule, ruleToCheck) {
+			return
+		}
 	}
-	if !reflect.DeepEqual(rules[7], DateTimeRule{&Before, &After, &EqualToDateTime, ActualFormat}) {
-		t.Fatalf(`Error parsing: %s`, "DateTimeRule")
-	}
+	rulesChecker.t.Fatalf(`Not parsed: %s`, ruleTitle)
 }
 
 func TestParseRules(t *testing.T) {

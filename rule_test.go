@@ -117,7 +117,7 @@ func TestMatchesJsonSchemaRule(t *testing.T) {
 	}`
 	res, err := ruleMatchesJsonSchemaRule.check(data)
 	if err != nil || !res {
-		t.Fatalf(`MatchesJsonPathRule failed checking by rule %s: %s. Error: %s`, ruleSchema, data, err)
+		t.Fatalf(`MatchesJsonSchemaRule failed checking by rule %s: %s. Error: %s`, ruleSchema, data, err)
 	}
 }
 

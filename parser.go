@@ -273,10 +273,15 @@ func (xPathFactory XPathJsonFactory) generateEqualsRule(query string, xPathFilte
 	if err != nil {
 		return nil, err
 	}
-	rule := EqualToJsonRule{node: node}
-	rule.IgnoreArrayOrder = xPathFilterProps.ignoreArrayOrder
-	rule.IgnoreExtraElements = xPathFilterProps.ignoreExtraElements
+	rule := EqualToJsonRule{node: node, EqualToBaseRule: parseEqualToBaseRule(xPathFilterProps)}
 	return rule, err
+}
+
+func parseEqualToBaseRule(xPathFilterProps *XPathFilterProps) EqualToBaseRule {
+	return EqualToBaseRule{
+		IgnoreArrayOrder:    xPathFilterProps.ignoreArrayOrder,
+		IgnoreExtraElements: xPathFilterProps.ignoreExtraElements,
+	}
 }
 
 func (xPathFactory XPathJsonFactory) generateMatchesXPathRule(filterPath *XPathFilter, xPathFilterPropsDefault *XPathFilterProps) (Rule, error) {
@@ -303,9 +308,10 @@ func (xPathFactory XPathJsonFactory) generateMatchesXPathRule(filterPath *XPathF
 		}
 		xPathRules = append(xPathRules, ruleSub)
 	}
-	rule := MatchesJsonPathRule{}
-	rule.path = filterPath.Expression
-	rule.innerRule = BlockRule{rulesOr: xPathRules}
+	rule := MatchesJsonPathRule{
+		path:      filterPath.Expression,
+		innerRule: BlockRule{rulesOr: xPathRules},
+	}
 	return rule, nil
 }
 
@@ -316,9 +322,7 @@ func (xPathFactory XPathXmlFactory) generateEqualsRule(query string, xPathFilter
 	if err != nil {
 		return nil, err
 	}
-	rule := EqualToXmlRule{node: node}
-	rule.IgnoreArrayOrder = xPathFilterProps.ignoreArrayOrder
-	rule.IgnoreExtraElements = xPathFilterProps.ignoreExtraElements
+	rule := EqualToXmlRule{node: node, EqualToBaseRule: parseEqualToBaseRule(xPathFilterProps)}
 	return rule, err
 }
 
@@ -350,9 +354,10 @@ func (xPathFactory XPathXmlFactory) generateMatchesXPathRule(filterPath *XPathFi
 		}
 		xPathRules = append(xPathRules, ruleSub)
 	}
-	rule := MatchesXmlXPathRule{}
-	rule.xPath = xPath
-	rule.innerRule = BlockRule{rulesOr: xPathRules}
+	rule := MatchesXmlXPathRule{
+		xPath:     xPath,
+		innerRule: BlockRule{rulesOr: xPathRules},
+	}
 	return rule, nil
 }
 
