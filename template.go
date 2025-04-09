@@ -100,12 +100,16 @@ func UpdateFileLinks(source string, data map[string]string) string {
 			continue
 		}
 		fileName := match[1]
-		val, ok := data[fileName]
-		if !ok { // Если ключ сущестует
-			source = regExInnerFile.ReplaceAllString(source, "")
+		regExInnerSource, err := regexp.Compile(fmt.Sprintf(`\{\{\{\s*"%s"\s*\}\}\}`, fileName))
+		if err != nil {
 			continue
 		}
-		source = regExInnerFile.ReplaceAllString(source, val)
+		val, ok := data[fileName]
+		if !ok { // Если ключ есть, но значения нет
+			source = regExInnerSource.ReplaceAllString(source, val)
+			continue
+		}
+		source = regExInnerSource.ReplaceAllString(source, val)
 	}
 	return source
 }
