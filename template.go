@@ -6,11 +6,14 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 
 	"github.com/google/uuid"
 )
 
 type RequestData map[string]interface{}
+
+var regExInnerFile = regexp.MustCompile(`\{\{\{\s*"(.*?)"\s*\}\}\}`)
 
 func ParseQuery(values url.Values) map[string]map[string]string {
 	response := map[string]map[string]string{}
@@ -41,8 +44,7 @@ func CookiesToMap(cookies []*http.Cookie) map[string]string {
 }
 
 func LoadRequestData(req *http.Request) (*RequestData, error) {
-	body := ""
-	bodyBase64 := ""
+	body, bodyBase64 := "", ""
 	if req.Body != nil {
 		b, err := io.ReadAll(req.Body)
 		if err != nil {
@@ -69,4 +71,45 @@ func LoadRequestData(req *http.Request) (*RequestData, error) {
 			"bodyAsBase64": bodyBase64,
 		},
 	}, nil
+}
+
+func LoadFileLinksList(source string) []string {
+	// Ищем все вхождения
+	matches := regExInnerFile.FindAllStringSubmatch(source, -1)
+	if matches == nil {
+		return nil // Нет совпадений
+	}
+	// Извлекаем первую группу (элемент $1) из каждого совпадения
+	var result []string
+	for _, match := range matches {
+		if len(match) > 1 { // Проверяем, что есть хотя бы одна группа
+			result = append(result, match[1])
+		}
+	}
+	return result
+}
+
+func UpdateFileLinks(source string, data map[string]string) string {
+	// Ищем все вхождения
+	matches := regExInnerFile.FindAllStringSubmatch(source, -1)
+	if matches == nil {
+		return source
+	}
+	for _, match := range matches {
+		if len(match) < 1 { // Проверяем, что есть хотя бы одна группа
+			continue
+		}
+		fileName := match[1]
+		regExInnerSource, err := regexp.Compile(fmt.Sprintf(`\{\{\{\s*"%s"\s*\}\}\}`, fileName))
+		if err != nil {
+			continue
+		}
+		val, ok := data[fileName]
+		if !ok { // Если ключ есть, но значения нет
+			source = regExInnerSource.ReplaceAllString(source, val)
+			continue
+		}
+		source = regExInnerSource.ReplaceAllString(source, val)
+	}
+	return source
 }

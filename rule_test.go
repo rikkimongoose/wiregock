@@ -4,9 +4,6 @@ import (
 	"regexp"
 	"testing"
 	"time"
-	//"github.com/antchfx/jsonquery"
-	//"github.com/antchfx/xmlquery"
-	//"github.com/antchfx/xpath"
 )
 
 func TestEqualToRuleCheck(t *testing.T) {
@@ -72,7 +69,55 @@ func TestDateTimeRuleCheck(t *testing.T) {
 	ruleAfter := DateTimeRule{after: &sourceData, timeFormat: time.RFC3339}
 	res, err = ruleAfter.check("2009-11-11T23:00:00Z")
 	if err != nil || !res {
-		t.Fatalf(`Rule doesn't check that %s is after %s Error: %s`, "2009-11-11T23:00:00Z", sourceData, err)
+		t.Fatalf(`Rule doesn't check that %s is after %s. Error: %s`, "2009-11-11T23:00:00Z", sourceData, err)
+	}
+}
+
+func TestMatchesJsonPathRule(t *testing.T) {
+	ruleSchema := "$.welcome.message[1]"
+	ruleMatchesJsonPath := MatchesJsonPathRule{ruleSchema, nil}
+	data := `{
+		"welcome":{
+				"message":["Good Morning", "Hello World!"]
+			}
+		}`
+	res, err := ruleMatchesJsonPath.check(data)
+	if err != nil || !res {
+		t.Fatalf(`MatchesJsonPathRule failed checking by rule %s: %s. Error: %s"`, ruleSchema, data, err)
+	}
+}
+
+func TestMatchesJsonSchemaRule(t *testing.T) {
+	ruleSchema := `{
+		"$id": "https://example.com/person.schema.json",
+		"$schema": "https://json-schema.org/draft/2020-12/schema",
+		"title": "Person",
+		"type": "object",
+		"properties": {
+			"firstName": {
+			"type": "string",
+			"description": "The person's first name."
+			},
+			"lastName": {
+			"type": "string",
+			"description": "The person's last name."
+			},
+			"age": {
+			"description": "Age in years which must be equal to or greater than zero.",
+			"type": "integer",
+			"minimum": 0
+			}
+		}
+	}`
+	ruleMatchesJsonSchemaRule := MatchesJsonSchemaRule{ruleSchema}
+	data := `{
+		"firstName": "John",
+		"lastName": "Doe",
+		"age": 21
+	}`
+	res, err := ruleMatchesJsonSchemaRule.check(data)
+	if err != nil || !res {
+		t.Fatalf(`MatchesJsonSchemaRule failed checking by rule %s: %s. Error: %s`, ruleSchema, data, err)
 	}
 }
 

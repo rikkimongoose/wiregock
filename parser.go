@@ -273,13 +273,60 @@ func (xPathFactory XPathJsonFactory) generateEqualsRule(query string, xPathFilte
 	if err != nil {
 		return nil, err
 	}
-	rule := EqualToJsonRule{node: node}
-	rule.IgnoreArrayOrder = xPathFilterProps.ignoreArrayOrder
-	rule.IgnoreExtraElements = xPathFilterProps.ignoreExtraElements
+	rule := EqualToJsonRule{node: node, EqualToBaseRule: parseEqualToBaseRule(xPathFilterProps)}
 	return rule, err
 }
 
+func parseEqualToBaseRule(xPathFilterProps *XPathFilterProps) EqualToBaseRule {
+	return EqualToBaseRule{
+		IgnoreArrayOrder:    xPathFilterProps.ignoreArrayOrder,
+		IgnoreExtraElements: xPathFilterProps.ignoreExtraElements,
+	}
+}
+
 func (xPathFactory XPathJsonFactory) generateMatchesXPathRule(filterPath *XPathFilter, xPathFilterPropsDefault *XPathFilterProps) (Rule, error) {
+	xPathFilterPropsLocal := loadXPathFilterProps(filterPath, xPathFilterPropsDefault)
+	xPathRules := loadXPathFilterRules(filterPath, xPathFilterPropsLocal.caseInsensitive)
+	if filterPath.EqualToJson != nil {
+		ruleJson, err := xPathFactory.generateEqualsRule(*filterPath.EqualToJson, &xPathFilterPropsLocal)
+		if err != nil {
+			return nil, err
+		}
+		xPathRules = append(xPathRules, ruleJson)
+	}
+	if filterPath.EqualToXml != nil {
+		ruleXml, err := xPathFactory.generateEqualsRule(*filterPath.EqualToXml, &xPathFilterPropsLocal)
+		if err != nil {
+			return nil, err
+		}
+		xPathRules = append(xPathRules, ruleXml)
+	}
+	for _, filterPathSub := range filterPath.And {
+		ruleSub, err := xPathFactory.generateMatchesXPathRule(&filterPathSub, &xPathFilterPropsLocal)
+		if err != nil {
+			return nil, err
+		}
+		xPathRules = append(xPathRules, ruleSub)
+	}
+	rule := MatchesJsonPathRule{
+		path:      filterPath.Expression,
+		innerRule: BlockRule{rulesOr: xPathRules},
+	}
+	return rule, nil
+}
+
+type XPathXmlFactory struct{}
+
+func (xPathFactory XPathXmlFactory) generateEqualsRule(query string, xPathFilterProps *XPathFilterProps) (Rule, error) {
+	node, err := xmlquery.Parse(strings.NewReader(query))
+	if err != nil {
+		return nil, err
+	}
+	rule := EqualToXmlRule{node: node, EqualToBaseRule: parseEqualToBaseRule(xPathFilterProps)}
+	return rule, err
+}
+
+func (xPathFactory XPathXmlFactory) generateMatchesXPathRule(filterPath *XPathFilter, xPathFilterPropsDefault *XPathFilterProps) (Rule, error) {
 	xPath, err := generateXPath(filterPath.Expression, filterPath.XPathNamespaces)
 	if err != nil {
 		return nil, err
@@ -307,56 +354,10 @@ func (xPathFactory XPathJsonFactory) generateMatchesXPathRule(filterPath *XPathF
 		}
 		xPathRules = append(xPathRules, ruleSub)
 	}
-	rule := MatchesJsonXPathRule{}
-	rule.xPath = xPath
-	rule.innerRule = BlockRule{rulesOr: xPathRules}
-	return rule, nil
-}
-
-type XPathXmlFactory struct{}
-
-func (xPathFactory XPathXmlFactory) generateEqualsRule(query string, xPathFilterProps *XPathFilterProps) (Rule, error) {
-	node, err := xmlquery.Parse(strings.NewReader(query))
-	if err != nil {
-		return nil, err
+	rule := MatchesXmlXPathRule{
+		xPath:     xPath,
+		innerRule: BlockRule{rulesOr: xPathRules},
 	}
-	rule := EqualToXmlRule{node: node}
-	rule.IgnoreArrayOrder = xPathFilterProps.ignoreArrayOrder
-	rule.IgnoreExtraElements = xPathFilterProps.ignoreExtraElements
-	return rule, err
-}
-
-func (xPathFactory XPathXmlFactory) generateMatchesXPathRule(filterPath *XPathFilter, xPathFilterPropsDefault *XPathFilterProps) (Rule, error) {
-	xPath, err := generateXPath(filterPath.Expression, filterPath.XPathNamespaces)
-	if err != nil {
-		return nil, err
-	}
-	xPathFilterPropsLocal := loadXPathFilterProps(filterPath, xPathFilterPropsDefault)
-	xPathRules := loadXPathFilterRules(filterPath, xPathFilterPropsLocal.caseInsensitive)
-	/*if filterPath.EqualToJson != nil {
-		ruleJson, err := xPathFactory.generateEqualsRule(*filterPath.EqualToJson, &xPathFilterPropsLocal)
-		if err != nil {
-			return nil, err
-		}
-		xPathRules = append(xPathRules, ruleJson)
-	}*/
-	if filterPath.EqualToXml != nil {
-		ruleXml, err := xPathFactory.generateEqualsRule(*filterPath.EqualToXml, &xPathFilterPropsLocal)
-		if err != nil {
-			return nil, err
-		}
-		xPathRules = append(xPathRules, ruleXml)
-	}
-	for _, filterPathSub := range filterPath.And {
-		ruleSub, err := xPathFactory.generateMatchesXPathRule(&filterPathSub, &xPathFilterPropsLocal)
-		if err != nil {
-			return nil, err
-		}
-		xPathRules = append(xPathRules, ruleSub)
-	}
-	rule := MatchesXmlXPathRule{}
-	rule.xPath = xPath
-	rule.innerRule = BlockRule{rulesOr: xPathRules}
 	return rule, nil
 }
 
@@ -470,13 +471,13 @@ func parseRule(filter *Filter) ([]Rule, error) {
 		rules = append(rules, rule)
 	}
 
-	/*if filter.MatchesJsonPath != nil {
+	if filter.MatchesJsonPath != nil {
 		rule, err := xPathJsonFactory.generateMatchesXPathRule(filter.MatchesJsonPath, &xPathFilterProps)
 		if err != nil {
 			return nil, err
 		}
 		rules = append(rules, rule)
-	}*/
+	}
 
 	if filter.MatchesXPath != nil {
 		rule, err := xPathXmlFactory.generateMatchesXPathRule(filter.MatchesXPath, &xPathFilterProps)
@@ -484,6 +485,11 @@ func parseRule(filter *Filter) ([]Rule, error) {
 			return nil, err
 		}
 		rules = append(rules, rule)
+	}
+
+	if filter.MatchesJsonSchema != nil {
+		val := *filter.MatchesJsonSchema
+		rules = append(rules, MatchesJsonSchemaRule{val})
 	}
 
 	return rules, nil
