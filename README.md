@@ -63,7 +63,7 @@ Templates are based on [mustache](https://mustache.github.io/) engine. There's s
 
 * **request.id** - The unique ID of each request
 * **request.url** - URL path and query
-* **#request.queryFull.<key>** - values of a query parameter (zero indexed) e.g. *{{#request.queryFull.search}}{{.}}{{/request.queryFull.search}}*
+* **request.queryFull.<key>** - values of a query parameter (zero indexed) e.g. *{{#request.queryFull.search}}{{.}}{{/request.queryFull.search}}*
 * **request.query.<key>** - First value of a query parameter e.g. *request.query.search*
 * **request.method** - request method e.g. *POST*
 * **request.host** - hostname part of the URL e.g. *my.example.com*
