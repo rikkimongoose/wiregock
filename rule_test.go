@@ -74,25 +74,52 @@ func TestDateTimeRuleCheck(t *testing.T) {
 }
 
 func TestMatchesJsonPathRule(t *testing.T) {
-	ruleMatchesJsonPath := MatchesJsonPathRule{"$.welcome.message[1]", nil}
-	checkData := `{
+	ruleSchema := "$.welcome.message[1]"
+	ruleMatchesJsonPath := MatchesJsonPathRule{ruleSchema, nil}
+	data := `{
 		"welcome":{
 				"message":["Good Morning", "Hello World!"]
 			}
 		}`
-	res, err := ruleMatchesJsonPath.check(checkData)
+	res, err := ruleMatchesJsonPath.check(data)
 	if err != nil || !res {
-		t.Fatalf(`MatchesJsonPathRule failed checking: %s. Error: %s"`, checkData, err)
+		t.Fatalf(`MatchesJsonPathRule failed checking by rule %s: %s. Error: %s"`, ruleSchema, data, err)
 	}
 }
 
-/*func TestMatchesJsonSchemaRule(t *testing.T) {
-	ruleMatchesJsonSchemaRule := MatchesJsonSchemaRule{"{\n  \"type\": \"object\",\n  \"required\": [\n    \"name\"\n  ],\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\"\n    },\n    \"tag\": {\n      \"type\": \"string\"\n    }\n  }\n}"}
-	res, err := ruleMatchesJsonSchemaRule.check("testing")
+func TestMatchesJsonSchemaRule(t *testing.T) {
+	ruleSchema := `{
+		"$id": "https://example.com/person.schema.json",
+		"$schema": "https://json-schema.org/draft/2020-12/schema",
+		"title": "Person",
+		"type": "object",
+		"properties": {
+			"firstName": {
+			"type": "string",
+			"description": "The person's first name."
+			},
+			"lastName": {
+			"type": "string",
+			"description": "The person's last name."
+			},
+			"age": {
+			"description": "Age in years which must be equal to or greater than zero.",
+			"type": "integer",
+			"minimum": 0
+			}
+		}
+	}`
+	ruleMatchesJsonSchemaRule := MatchesJsonSchemaRule{ruleSchema}
+	data := `{
+		"firstName": "John",
+		"lastName": "Doe",
+		"age": 21
+	}`
+	res, err := ruleMatchesJsonSchemaRule.check(data)
 	if err != nil || !res {
-		t.Fatalf(`MatchesJsonSchemaRule failed checking: test`)
+		t.Fatalf(`MatchesJsonPathRule failed checking by rule %s: %s. Error: %s`, ruleSchema, data, err)
 	}
-}*/
+}
 
 func TestAbsentRuleCheck(t *testing.T) {
 	absentRule := AbsentRule{}
