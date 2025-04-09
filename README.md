@@ -50,6 +50,12 @@ Stub matching and verification queries can use the following request attributes:
 * **equalToJson** if the attribute (most likely the request body in practice) is valid JSON and is a semantic match for the expected value.
 * **equalToXml** if the attribute value is valid XML and is semantically equal to the expected XML document
 * **matchesXPath** XPath matcher for XML objects.
+* **ignoreArrayOrder** ignore order of array items
+* **ignoreExtraElements** ignore extra elements of array items
+* **matchesJsonPath** check by Json Path
+* **matchesJsonSchema** check by Json Schema
+* **includes** possible elements
+* **hasExactly** exact elements 
 
 ### Templates
 
