@@ -69,9 +69,30 @@ func TestDateTimeRuleCheck(t *testing.T) {
 	ruleAfter := DateTimeRule{after: &sourceData, timeFormat: time.RFC3339}
 	res, err = ruleAfter.check("2009-11-11T23:00:00Z")
 	if err != nil || !res {
-		t.Fatalf(`Rule doesn't check that %s is after %s Error: %s`, "2009-11-11T23:00:00Z", sourceData, err)
+		t.Fatalf(`Rule doesn't check that %s is after %s. Error: %s`, "2009-11-11T23:00:00Z", sourceData, err)
 	}
 }
+
+func TestMatchesJsonPathRule(t *testing.T) {
+	ruleMatchesJsonPath := MatchesJsonPathRule{"$.welcome.message[1]", nil}
+	checkData := `{
+		"welcome":{
+				"message":["Good Morning", "Hello World!"]
+			}
+		}`
+	res, err := ruleMatchesJsonPath.check(checkData)
+	if err != nil || !res {
+		t.Fatalf(`MatchesJsonPathRule failed checking: %s. Error: %s"`, checkData, err)
+	}
+}
+
+/*func TestMatchesJsonSchemaRule(t *testing.T) {
+	ruleMatchesJsonSchemaRule := MatchesJsonSchemaRule{"{\n  \"type\": \"object\",\n  \"required\": [\n    \"name\"\n  ],\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\"\n    },\n    \"tag\": {\n      \"type\": \"string\"\n    }\n  }\n}"}
+	res, err := ruleMatchesJsonSchemaRule.check("testing")
+	if err != nil || !res {
+		t.Fatalf(`MatchesJsonSchemaRule failed checking: test`)
+	}
+}*/
 
 func TestAbsentRuleCheck(t *testing.T) {
 	absentRule := AbsentRule{}

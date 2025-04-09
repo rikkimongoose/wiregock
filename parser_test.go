@@ -23,10 +23,10 @@ func TestParseRule(t *testing.T) {
 	EqualToJson := "{ \"total_results\": 4 }"
 	IgnoreArrayOrder := true
 	IgnoreExtraElements := true
-	//MatchesJsonPath := "MatchesJsonPath"
+	MatchesJsonPath := "MatchesJsonPath"
 	EqualToXml := "<thing>Hello</thing>"
 	MatchesXPath := "MatchesXPath"
-	// MatchesJsonSchema := "MatchesJsonSchema"
+	MatchesJsonSchema := "MatchesJsonSchema"
 
 	filter := Filter{
 		Contains:            &Contains,
@@ -44,10 +44,10 @@ func TestParseRule(t *testing.T) {
 		EqualToJson:         &EqualToJson,
 		IgnoreArrayOrder:    &IgnoreArrayOrder,
 		IgnoreExtraElements: &IgnoreExtraElements,
-		//	MatchesJsonPath:     &XPathFilter{Expression: MatchesJsonPath},
-		//  MatchesJsonSchema: &MatchesJsonSchema
-		EqualToXml:   &EqualToXml,
-		MatchesXPath: &XPathFilter{Expression: MatchesXPath},
+		MatchesJsonPath:     &XPathFilter{Expression: MatchesJsonPath},
+		MatchesJsonSchema:   &MatchesJsonSchema,
+		EqualToXml:          &EqualToXml,
+		MatchesXPath:        &XPathFilter{Expression: MatchesXPath},
 	}
 
 	rules, err := parseRule(&filter)

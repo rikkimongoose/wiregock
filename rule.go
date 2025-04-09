@@ -2,6 +2,7 @@ package wiregock
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -214,7 +215,9 @@ func (rule MatchesJsonXPathRule) check(str string) (bool, error) {
 }
 
 func (rule MatchesJsonPathRule) check(str string) (bool, error) {
-	result, err := jsonpath.Get(rule.path, str)
+	v := interface{}(nil)
+	json.Unmarshal([]byte(str), &v)
+	result, err := jsonpath.Get(rule.path, v)
 	if err != nil {
 		return false, err
 	}
@@ -230,7 +233,7 @@ func (rule MatchesJsonPathRule) check(str string) (bool, error) {
 			}
 		}
 	}
-	return false, nil
+	return result != nil, nil
 }
 
 func (rule MatchesJsonSchemaRule) check(str string) (bool, error) {
