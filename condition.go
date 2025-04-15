@@ -56,6 +56,10 @@ type MultiFilter struct {
 	DoesNotContain  *string `json:"doesNotContain,omitempty" bson:"doesNotContain,omitempty"`
 	CaseInsensitive *bool   `json:"caseInsensitive,omitempty" bson:"caseInsensitive,omitempty"`
 }
+type BasicAuthCredentials struct {
+	Username *string `json:"username,omitempty" bson:"username,omitempty"`
+	Password *string `json:"password,omitempty" bson:"password,omitempty"`
+}
 
 type MockRequest struct {
 	UrlPath              *string                 `json:"urlPath,omitempty" bson:"urlPath,omitempty"`
@@ -67,10 +71,16 @@ type MockRequest struct {
 	Cookies              map[string]Filter       `json:"cookies,omitempty" bson:"cookies,omitempty"`
 	BodyPatterns         []Filter                `json:"bodyPatterns,omitempty" bson:"bodyPatterns,omitempty"`
 	MultipartPatterns    []MultipartPatternsData `json:"multipartPatterns,omitempty" bson:"multipartPatterns,omitempty"`
-	BasicAuthCredentials *struct {
-		Username *string `json:"username,omitempty" bson:"username,omitempty"`
-		Password *string `json:"password,omitempty" bson:"password,omitempty"`
-	} `json:"basicAuthCredentials,omitempty" bson:"basicAuthCredentials,omitempty"`
+	BasicAuthCredentials *BasicAuthCredentials   `json:"basicAuthCredentials,omitempty" bson:"basicAuthCredentials,omitempty"`
+}
+
+type MockResponse struct {
+	Status       *int              `json:"status,omitempty" bson:"status,omitempty"`
+	Body         *string           `json:"body,omitempty" bson:"body,omitempty"`
+	BodyFileName *string           `json:"bodyFileName,omitempty" bson:"bodyFileName,omitempty"`
+	JsonBody     *interface{}      `json:"jsonBody,omitempty" bson:"jsonBody,omitempty"`
+	Headers      map[string]string `json:"headers,omitempty" bson:"headers,omitempty"`
+	Cookies      map[string]string `json:"cookies,omitempty" bson:"cookies,omitempty"`
 }
 
 type MultipartPatternsData struct {
@@ -81,16 +91,9 @@ type MultipartPatternsData struct {
 }
 
 type MockData struct {
-	Request  *MockRequest `json:"request" bson:"request"`
-	Response *struct {
-		Status       *int              `json:"status,omitempty" bson:"status,omitempty"`
-		Body         *string           `json:"body,omitempty" bson:"body,omitempty"`
-		BodyFileName *string           `json:"bodyFileName,omitempty" bson:"bodyFileName,omitempty"`
-		JsonBody     *interface{}      `json:"jsonBody,omitempty" bson:"jsonBody,omitempty"`
-		Headers      map[string]string `json:"headers,omitempty" bson:"headers,omitempty"`
-		Cookies      map[string]string `json:"cookies,omitempty" bson:"cookies,omitempty"`
-	} `json:"response" bson:"response"`
-	Vars *map[string]string `json:"vars,omitempty" bson:"vars,omitempty"`
+	Request  *MockRequest       `json:"request" bson:"request"`
+	Response *MockResponse      `json:"response" bson:"response"`
+	Vars     *map[string]string `json:"vars,omitempty" bson:"vars,omitempty"`
 }
 
 type Condition interface {
