@@ -157,7 +157,7 @@ func TestRegExRuleCheck(t *testing.T) {
 	}
 }
 
-/*func TestMatchesJsonXPathRule(t *testing.T) {
+func TestMatchesJsonXPathRule(t *testing.T) {
 	xPathFilterProps := XPathFilterProps{true, true, true}
 	xPathJsonFactory := XPathJsonFactory{}
 	exp := "$.foo"
@@ -175,7 +175,7 @@ func TestRegExRuleCheck(t *testing.T) {
 	if err != nil || !res {
 		t.Fatalf(`MatchesJsonXPathRule %s failed checking: %s`, json, value)
 	}
-}*/
+}
 
 func TestMatchesXmlXPathRule(t *testing.T) {
 	xPathFilterProps := XPathFilterProps{true, true, true}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
@@ -194,15 +193,16 @@ func (rule MatchesJsonPathRule) check(str string) (bool, error) {
 		return false, err
 	}
 	if rule.innerRule != nil {
-		for _, value := range result.([]interface{}) {
-			valueStr := fmt.Sprintf("%s", value)
-			ok, err := rule.innerRule.check(valueStr)
-			if err != nil {
-				return false, err
-			}
-			if ok {
-				return true, nil
-			}
+		jsonData, err := json.Marshal(result)
+		if err != nil {
+			return false, err
+		}
+		ok, err := rule.innerRule.check(string(jsonData))
+		if err != nil {
+			return false, err
+		}
+		if ok {
+			return true, nil
 		}
 	}
 	return result != nil, nil
